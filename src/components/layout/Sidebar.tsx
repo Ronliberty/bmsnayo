@@ -32,9 +32,9 @@ export function Sidebar({
     { name: "News", href: "/dashboard", icon: Home, restricted: false },
     { name: "Jobs", href: "/dashboard/jobs", icon: Briefcase, restricted: false },
     { name: "Marketplace", href: "/dashboard/marketplace", icon: Store, restricted: false },
-    { name: "Notifications", href: "/dashboard/notifications", icon: Bell, restricted: false },
-    { name: "Profile", href: "/dashboard/profile", icon: User, restricted: false },
-    { name: "Subscription", href: "/dashboard/subscription", icon: User, restricted: false },
+    
+    
+ 
 
     // Restricted items
     {
@@ -53,11 +53,12 @@ export function Sidebar({
     },
     {
       name: "Seller Program",
-      href: "/dashboard/seller",
+      href: "/seller",
       icon: DollarSign,
       restricted: !isSeller,
       tooltip: "Join Seller Program to unlock",
     },
+    { name: "Subscription", href: "/dashboard/subscription", icon: User, restricted: false },
 
     { name: "Settings", href: "/dashboard/settings", icon: Settings, restricted: false },
   ];

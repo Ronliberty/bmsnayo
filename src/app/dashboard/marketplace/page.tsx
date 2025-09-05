@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 // ------------------ Mock Data -------------------
 const people = [
@@ -76,6 +77,8 @@ export default function MarketplacePage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Marketplace</h1>
+      <Link className="text-sm text-blue-500 mb-4 inline-block" href="/dashboard/p2p">P2P</Link>
+      <p className="text-muted-foreground mb-6">Hire freelancers or buy apps and services securely.</p>
 
       <Tabs defaultValue="people">
         <TabsList className="mb-6">

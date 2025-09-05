@@ -3,6 +3,7 @@
 import { Bell, Search, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
+import Link from "next/link";
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
@@ -32,15 +33,17 @@ export function Navbar() {
         </button>
 
         {/* Notifications */}
-        <button className="relative p-2 rounded-full hover:bg-muted">
+        <Link href="/dashboard/notifications" className="relative p-2 rounded-full hover:bg-muted">
           <Bell className="h-5 w-5" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
+        </Link>
 
         {/* Profile */}
-        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold text-xs">
-          U
-        </div>
+        <Link href="/dashboard/profile">
+          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold text-xs cursor-pointer hover:bg-accent">
+            U
+          </div>
+        </Link>
       </div>
     </header>
   );
