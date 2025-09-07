@@ -6,7 +6,7 @@ import { AnalyticsSummary } from "@/components/analytics/AnalyticsSummary";
 import { Charts } from "@/components/analytics/Charts";
 import { Card } from "@/components/ui/card";
 
-// Mock analytics data (would come from API)
+
 const mockEarningsSeries = [
   { date: "2025-08-07", earnings: 10 },
   { date: "2025-08-10", earnings: 30 },
