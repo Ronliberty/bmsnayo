@@ -1,13 +1,11 @@
-// app/(dashboard)/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Tabs,
   TabsList,
   TabsTrigger,
-  TabsContent,
 } from "@/components/ui/tabs";
 import {
   Select,
@@ -17,52 +15,63 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Globe } from "lucide-react";
+import { useAuth } from "@/context/AuthContext"; // get access token
 
-// Mock Data (imitates NewsArticle model)
-const mockArticles = [
-  {
-    id: "1",
-    title: "AI Training Jobs Surge in 2025 Market",
-    url: "#",
-    summary: "Companies worldwide are hiring data annotators to fuel AI model development...",
-    source: { name: "TechCrunch", reliability_score: 85 },
-    topics: ["AI", "Jobs"],
-    language: "en",
-    region: "US",
-    published_at: "2025-09-04",
-    is_featured: true,
-  },
-  {
-    id: "2",
-    title: "New Opportunities in Remote Freelance Platforms",
-    url: "#",
-    summary: "Freelancers are finding more stable income through curated marketplaces...",
-    source: { name: "Forbes", reliability_score: 90 },
-    topics: ["Market", "Jobs"],
-    language: "en",
-    region: "Global",
-    published_at: "2025-09-03",
-    is_featured: false,
-  },
-  {
-    id: "3",
-    title: "Tech Regulations Shift AI Hiring Trends",
-    url: "#",
-    summary: "Policy changes in Europe could influence where AI jobs are located...",
-    source: { name: "BBC", reliability_score: 88 },
-    topics: ["AI", "Policy"],
-    language: "en",
-    region: "EU",
-    published_at: "2025-09-02",
-    is_featured: false,
-  },
-];
+type Article = {
+  id: string;
+  title: string;
+  url: string;
+  summary: string;
+  source: { name: string; reliability_score: number };
+  topics: string[];
+  language: string;
+  region: string;
+  published_at: string;
+  is_featured: boolean;
+};
 
 export default function DashboardPage() {
+  const { access } = useAuth(); // access token from AuthContext
+  const [articles, setArticles] = useState<Article[]>([]);
   const [region, setRegion] = useState("all");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  const featured = mockArticles.find((a) => a.is_featured);
-  const filteredArticles = mockArticles.filter(
+  useEffect(() => {
+    async function fetchArticles() {
+      if (!access) return; // wait until logged in
+      setLoading(true);
+      setErr(null);
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/articles/`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${access}`, // 🔑 JWT token
+            },
+          }
+        );
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.detail || "Failed to fetch articles");
+        }
+
+        const data = await res.json();
+        setArticles(data); // assuming API returns a list
+      } catch (e: any) {
+        setErr(e.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchArticles();
+  }, [access]);
+
+  const featured = articles.find((a) => a.is_featured);
+  const filteredArticles = articles.filter(
     (a) => region === "all" || a.region === region
   );
 
@@ -73,6 +82,10 @@ export default function DashboardPage() {
       <p className="text-muted-foreground">
         Stay updated on AI, jobs, and market opportunities.
       </p>
+
+      {/* Show errors / loading */}
+      {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
+      {err && <p className="text-sm text-red-600">{err}</p>}
 
       {/* Featured Article */}
       {featured && (
@@ -89,6 +102,7 @@ export default function DashboardPage() {
             <a
               href={featured.url}
               className="text-primary text-sm font-medium hover:underline"
+              target="_blank"
             >
               Read more →
             </a>
@@ -144,6 +158,7 @@ export default function DashboardPage() {
               <a
                 href={article.url}
                 className="text-primary text-sm font-medium hover:underline mt-2 inline-block"
+                target="_blank"
               >
                 Read more →
               </a>

@@ -1,4 +1,3 @@
-// context/AuthContext.tsx
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
 
@@ -19,43 +18,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Call this to log in
   async function login(email: string, password: string) {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email,
+          password,
+          react_app: process.env.NEXT_PUBLIC_APP_UUID,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw data;
       setAccess(data.access);
       setUser(data.user ?? null);
+      localStorage.setItem("refresh", data.refresh); // ✅ save refresh
     } finally {
       setLoading(false);
     }
   }
 
   async function register(payload: any) {
-    const app_uuid = process.env.NEXT_PUBLIC_APP_UUID;
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register/`, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-       body: JSON.stringify({
-      ...payload,   // spread into an object
-      app_uuid: process.env.NEXT_PUBLIC_APP_UUID,     // add uuid
-    }),
+      body: JSON.stringify({
+        ...payload,
+        react_app: process.env.NEXT_PUBLIC_APP_UUID, // ✅ fixed
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw data;
     return data;
   }
 
-  // attempt refresh, store new access if successful
   async function refresh(): Promise<boolean> {
     try {
-      const res = await fetch("/api/auth/refresh", { method: "POST" });
+      const refreshToken = localStorage.getItem("refresh");
+      if (!refreshToken) return false;
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh: refreshToken }),
+      });
       const data = await res.json();
       if (!res.ok) {
         setAccess(null);
@@ -72,12 +80,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    localStorage.removeItem("refresh"); // ✅ remove refresh
     setAccess(null);
     setUser(null);
   }
 
-  // optional: on mount, attempt refresh so user is auto-logged if cookie present
   useEffect(() => {
     (async () => {
       await refresh();

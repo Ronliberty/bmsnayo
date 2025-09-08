@@ -2,12 +2,49 @@
 
 import { Bell, Search, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext"; // ✅ user info
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [search, setSearch] = useState("");
+  const { user } = useAuth(); 
+  const [hasUnread, setHasUnread] = useState(false);
+
+  // Fetch unread notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user) return;
+
+      try {
+        const res = await fetch("http://localhost:8000/api/notifications/", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access")}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch notifications");
+        const data = await res.json();
+
+        // Check if there is any unread notification
+        const unread = data.some((n: any) => !n.is_read);
+        setHasUnread(unread);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      }
+    };
+
+    fetchNotifications();
+  }, [user]);
+
+  // Helper to get profile initial
+  const getInitial = () => {
+    if (!user) return "U";
+    if (user.username) return user.username.charAt(0).toUpperCase();
+    if (user.email) return user.email.charAt(0).toUpperCase();
+    return "U";
+  };
 
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-background sticky top-0 z-20">
@@ -35,13 +72,15 @@ export function Navbar() {
         {/* Notifications */}
         <Link href="/dashboard/notifications" className="relative p-2 rounded-full hover:bg-muted">
           <Bell className="h-5 w-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          {hasUnread && (
+            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          )}
         </Link>
 
         {/* Profile */}
         <Link href="/dashboard/profile">
-          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold text-xs cursor-pointer hover:bg-accent">
-            U
+          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:bg-accent">
+            {getInitial()}
           </div>
         </Link>
       </div>

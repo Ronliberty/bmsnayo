@@ -7,8 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { LogOut, Trash2, Key } from "lucide-react";
+import { useAuth } from "@/context/AuthContext"; // 👈 import auth context
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
+  const { logout } = useAuth(); // 👈 grab logout from context
+  const router = useRouter();
+
+  async function handleLogout() {
+    await logout();            // clear tokens + user
+    router.push("/");     // redirect to login page
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-2">Settings</h1>
@@ -92,7 +102,12 @@ export default function SettingsPage() {
               <CardTitle className="text-red-600">Danger Zone</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full" size="lg">
+              <Button
+                variant="outline"
+                className="w-full"
+                size="lg"
+                onClick={handleLogout} // 👈 hook up logout
+              >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>

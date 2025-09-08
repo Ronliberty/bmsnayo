@@ -4,11 +4,11 @@ import { ReactNode } from "react";
 import { Navbar } from "../../components/layout/Navbar";
 import { Sidebar } from "../../components/layout/Sidebar";
 import { MobileNav } from "../../components/layout/MobileNav";
-// import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    // <ProtectedRoute>
+     <ProtectedRoute>
       <div className="flex h-screen bg-background text-foreground">
         {/* Sidebar - visible only on desktop */}
         <aside className="hidden md:flex md:w-64 border-r border-border">
@@ -29,6 +29,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <MobileNav />
         </div>
       </div>
-    // </ProtectedRoute>
+     </ProtectedRoute>
   );
 }
