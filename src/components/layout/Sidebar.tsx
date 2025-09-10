@@ -32,6 +32,7 @@ export function Sidebar({
     { name: "News", href: "/dashboard", icon: Home, restricted: false },
     { name: "Jobs", href: "/dashboard/jobs", icon: Briefcase, restricted: false },
     { name: "Marketplace", href: "/dashboard/marketplace", icon: Store, restricted: false },
+    { name: "sellers", href: "/dashboard/seller", icon: Store, restricted: false },
     
     
  
@@ -42,21 +43,21 @@ export function Sidebar({
       href: "/dashboard/analytics",
       icon: BarChart2,
       restricted: !isSubscribed,
-      tooltip: "Subscribe to access Analytics",
+      tooltip: "Subscribe",
     },
     {
       name: "Partnerships",
       href: "/dashboard/partnerships",
       icon: Users,
       restricted: !isPartner,
-      tooltip: "Become a Partner to unlock",
+      tooltip: "Subscribe",
     },
     {
       name: "Seller Program",
       href: "/seller",
       icon: DollarSign,
       restricted: !isSeller,
-      tooltip: "Join Seller Program to unlock",
+      tooltip: "Subscribe",
     },
     { name: "Subscription", href: "/dashboard/subscription", icon: User, restricted: false },
 

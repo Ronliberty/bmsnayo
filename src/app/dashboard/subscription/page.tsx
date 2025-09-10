@@ -1,19 +1,55 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+
+type Plan = {
+  name: string;
+  price: number;
+  benefits: string[];
+};
 
 export default function SubscriptionPage() {
-  const currentPlan = "Free"; // mock data, later dynamic
-  const isSubscribed = false; // mock data
+  const { access } = useAuth(); // ✅ get token
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
 
-  const benefits = [
-    "Access to premium job listings",
-    "Unlock Analytics dashboard",
-    "Priority support",
-    "Early access to new features",
-  ];
+  // Mock current user subscription for demonstration
+  const currentPlan = "Free";
+  const isSubscribed = false;
+
+  // Fetch plans from API
+  useEffect(() => {
+    async function fetchPlans() {
+      if (!access) return;
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/plans/`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${access}`,
+          },
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.detail || "Failed to fetch plans");
+        }
+
+        const data: Plan[] = await res.json();
+        setPlans(data);
+      } catch (error: any) {
+        console.error("Error fetching plans:", error);
+        setErr(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPlans();
+  }, [access]);
 
   return (
     <div className="p-6 space-y-6">
@@ -22,49 +58,42 @@ export default function SubscriptionPage() {
         Manage your subscription plan and benefits.
       </p>
 
-      {/* Current Plan */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Current Plan</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p>
-            <span className="font-semibold">Plan:</span> {currentPlan}
-          </p>
-          <p>
-            <span className="font-semibold">Price:</span>{" "}
-            {isSubscribed ? "$20/month" : "Free"}
-          </p>
-          {isSubscribed ? (
-            <Button variant="destructive">
-              <XCircle className="h-4 w-4 mr-2" />
-              Cancel Subscription
-            </Button>
-          ) : (
-            <Button>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Subscribe for $20/month
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      {loading && <p className="text-sm text-muted-foreground">Loading plans...</p>}
+      {err && <p className="text-sm text-red-600">{err}</p>}
 
-      {/* Benefits */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Benefits of Subscription</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            {benefits.map((benefit, idx) => (
-              <li key={idx} className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span>{benefit}</span>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+      {!loading && !err && plans.map((plan) => (
+        <Card key={plan.name}>
+          <CardHeader>
+            <CardTitle>{plan.name} Plan</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p>
+              <span className="font-semibold">Price:</span> {plan.price === 0 ? "Free" : `$${plan.price}/month`}
+            </p>
+            <ul className="space-y-1">
+              {plan.benefits.map((benefit, idx) => (
+                <li key={idx} className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span>{benefit}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+          <CardFooter>
+            {plan.name === currentPlan && isSubscribed ? (
+              <Button variant="destructive">
+                <XCircle className="h-4 w-4 mr-2" />
+                Cancel Subscription
+              </Button>
+            ) : (
+              <Button>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Subscribe
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
+      ))}
 
       {/* Custom Plan */}
       <Card>

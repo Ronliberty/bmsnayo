@@ -23,7 +23,7 @@ export default function RegisterPage() {
     try {
       await register({ email, first_name, last_name, password});
       // optionally auto-login or redirect to login page
-      router.push("/login");
+      router.push("/dashboard");
     } catch (e: any) {
       setErr(JSON.stringify(e));
     } finally {
