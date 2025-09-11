@@ -1,4 +1,3 @@
-// app/login/page.tsx
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -18,7 +17,7 @@ export default function LoginPage() {
     setErr(null);
     try {
       await login(email, password);
-      router.push("/dashboard"); // or wherever
+      router.push("/dashboard");
     } catch (e: any) {
       setErr(e?.error || e?.detail || "Login failed");
     } finally {
@@ -27,16 +26,44 @@ export default function LoginPage() {
   }
 
   return (
-    <main>
-      <h1>Login</h1>
-      <form onSubmit={onSubmit}>
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" required />
-        <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" required />
-        <button type="submit" disabled={loading}>Sign in</button>
-        {err && <p style={{ color: "red" }}>{err}</p>}
-      </form>
-      <a href="/forgot-password">Forgot password?</a>
-        <a href="/auth/register">Sign up</a>
+    <main className="min-h-screen flex items-center justify-center bg-[rgb(var(--background))] text-[rgb(var(--foreground))] px-4">
+      <div className="w-full max-w-md p-8 bg-[rgb(var(--card))] text-[rgb(var(--card-foreground))] rounded-xl shadow-lg">
+        <h1 className="text-3xl font-semibold mb-6 text-center">Login</h1>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            type="email"
+            required
+            className="w-full px-4 py-2 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--input))] text-[rgb(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]"
+          />
+          <input
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            type="password"
+            required
+            className="w-full px-4 py-2 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--input))] text-[rgb(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className=" cursor-pointer w-full py-2 bg-[rgb(var(--primary))] text-[rgb(var(--primary-foreground))] rounded-md font-medium hover:bg-[rgb(var(--primary-foreground))] hover:text-[rgb(var(--primary))] transition-colors disabled:opacity-50"
+          >
+            {loading ? "Signing in..." : "Sign in"}
+          </button>
+          {err && <p className="text-red-500 text-sm mt-1">{err}</p>}
+        </form>
+        <div className="mt-4 flex justify-between text-sm">
+          <a href="/forgot-password" className="cursor-pointer text-[rgb(var(--accent))] hover:underline">
+            Forgot password?
+          </a>
+          <a href="/auth/register" className="cursor-pointer text-[rgb(var(--accent))] hover:underline">
+            Sign up
+          </a>
+        </div>
+      </div>
     </main>
   );
 }

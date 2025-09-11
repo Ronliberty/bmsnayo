@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Nayo",
   description: "Nayo – Connect, Share, Experience. A modern platform for skills, services, and apps.",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/nayo.ico",
   },
 };
 

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { ShoppingCart, DollarSign, Heart } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type Media = {
   id: string;
@@ -36,6 +37,7 @@ type MarketplaceItem = {
 
 export default function MarketplacePage() {
   const { access, user } = useAuth();
+  const router = useRouter();
   const [items, setItems] = useState<MarketplaceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -124,8 +126,9 @@ export default function MarketplacePage() {
   }, [access]);
 
   // Add to wishlist
-  const handleWishlist = async (itemId: string) => {
+  const handleWishlist = async (itemId: string, sellerId: number) => {
     if (!access) return;
+    if (sellerId === user?.id) return; // prevent adding own item
 
     try {
       const res = await fetch(
@@ -141,7 +144,11 @@ export default function MarketplacePage() {
       );
 
       if (!res.ok) throw new Error("Failed to add to wishlist");
+
       setWishlistItems((prev) => [...prev, parseInt(itemId)]);
+
+      // Optional: redirect to wishlist page after adding
+      router.push("/dashboard/wishlist");
     } catch (error) {
       console.error("Wishlist error:", error);
     }
@@ -152,17 +159,14 @@ export default function MarketplacePage() {
     if (!access) return;
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/market/orders/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${access}`,
-          },
-          body: JSON.stringify({ item_id: itemId }),
-        }
-      );
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/market/orders/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access}`,
+        },
+        body: JSON.stringify({ item_id: itemId }),
+      });
 
       if (!res.ok) throw new Error("Failed to place order");
       setUserOrders((prev) => [...prev, parseInt(itemId)]);
@@ -176,13 +180,21 @@ export default function MarketplacePage() {
     <div className="p-6 space-y-6">
       <h2 className="text-2xl font-bold">Marketplace</h2>
 
-      {/* Go to P2P Button */}
-      <Button
-        onClick={() => setShowP2POptions((prev) => !prev)}
-        className="px-4 py-2 rounded-full bg-[rgb(var(--primary))] text-[rgb(var(--primary-foreground))]"
-      >
-        Go to P2P ({buyerCount} buys / {sellerCount} sells)
-      </Button>
+      {/* P2P + Wishlist Buttons */}
+      <div className="flex gap-4">
+        <Button
+          onClick={() => setShowP2POptions((prev) => !prev)}
+          className="px-4 py-2 rounded-full bg-[rgb(var(--primary))] text-[rgb(var(--primary-foreground))]"
+        >
+          Go to P2P ({buyerCount} buys / {sellerCount} sells)
+        </Button>
+
+        <Link href="/dashboard/marketplace/wishlist">
+          <Button className="px-4 py-2 rounded-full bg-[rgb(var(--secondary))] text-white flex items-center gap-1">
+            <Heart className="w-4 h-4" /> Wishlist
+          </Button>
+        </Link>
+      </div>
 
       {/* P2P mode navigation */}
       {showP2POptions && (
@@ -213,9 +225,7 @@ export default function MarketplacePage() {
             <Card key={item.id}>
               <CardHeader>
                 <CardTitle>{item.title}</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  {item.seller_name}
-                </p>
+                <p className="text-xs text-muted-foreground">{item.seller_name}</p>
               </CardHeader>
 
               <CardContent className="space-y-2">
@@ -231,7 +241,6 @@ export default function MarketplacePage() {
                     ))}
                   </div>
                 )}
-
                 <p className="text-sm">{item.description}</p>
                 <p className="mt-2 font-semibold">
                   {item.currency} {item.price}
@@ -247,7 +256,7 @@ export default function MarketplacePage() {
                   <>
                     <Button
                       variant="outline"
-                      onClick={() => handleWishlist(item.id)}
+                      onClick={() => handleWishlist(item.id, item.seller)}
                       disabled={wishlistItems.includes(parseInt(item.id))}
                     >
                       <Heart className="w-4 h-4 mr-1" />

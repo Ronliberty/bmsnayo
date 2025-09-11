@@ -18,7 +18,7 @@ export function Navbar() {
       if (!user) return;
 
       try {
-        const res = await fetch("http://localhost:8000/api/notifications/", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notify/notifications/`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("access")}`,
           },

@@ -77,7 +77,7 @@ export default function LandingPage() {
                 Get Started
               </Link>
               <Link
-                href="/about"
+                href="/auth/login"
                 className="border border-gray-400 dark:border-gray-600 px-8 py-4 rounded-full text-lg font-medium hover:bg-white/10 transition"
               >
                 Learn More

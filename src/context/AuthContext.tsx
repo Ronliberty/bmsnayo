@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 type AuthContextType = {
   access: string | null;
   user: any | null;
-  loading: boolean; 
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (payload: any) => Promise<any>;
@@ -16,15 +16,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [access, setAccess] = useState<string | null>(null);
   const [user, setUser] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // start as true
 
+  // ------------------ LOGIN ------------------
   async function login(email: string, password: string) {
     setLoading(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        credentials: "include", // important for HttpOnly cookie
+        body: JSON.stringify({
           email,
           password,
           react_app: process.env.NEXT_PUBLIC_APP_UUID,
@@ -32,21 +34,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       const data = await res.json();
       if (!res.ok) throw data;
+
       setAccess(data.access);
       setUser(data.user ?? null);
-      localStorage.setItem("refresh", data.refresh); // ✅ save refresh
     } finally {
       setLoading(false);
     }
   }
 
+  // ------------------ REGISTER ------------------
   async function register(payload: any) {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register/`, {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         ...payload,
-        react_app: process.env.NEXT_PUBLIC_APP_UUID, // ✅ fixed
+        react_app: process.env.NEXT_PUBLIC_APP_UUID,
       }),
     });
     const data = await res.json();
@@ -54,23 +58,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return data;
   }
 
+  // ------------------ REFRESH ------------------
   async function refresh(): Promise<boolean> {
     try {
-      const refreshToken = localStorage.getItem("refresh");
-      if (!refreshToken) return false;
-
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh: refreshToken }),
+        credentials: "include", // important for cookie
+        body: JSON.stringify({ react_app: process.env.NEXT_PUBLIC_APP_UUID }),
       });
       const data = await res.json();
+
       if (!res.ok) {
         setAccess(null);
         setUser(null);
         return false;
       }
+
       setAccess(data.access);
+      setUser(data.user ?? null);
       return true;
     } catch (err) {
       setAccess(null);
@@ -79,15 +85,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  // ------------------ LOGOUT ------------------
   async function logout() {
-    localStorage.removeItem("refresh"); // ✅ remove refresh
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout/`, {
+      method: "POST",
+      credentials: "include", // clear cookie
+    });
     setAccess(null);
     setUser(null);
   }
 
+  // ------------------ AUTO REFRESH ON PAGE LOAD ------------------
   useEffect(() => {
     (async () => {
       await refresh();
+      setLoading(false);
     })();
   }, []);
 
