@@ -21,7 +21,7 @@ export default function RegisterPage() {
     setErr(null);
     try {
       await register({ email, first_name, last_name, password });
-      router.push("/dashboard");
+      router.push("/onboard");
     } catch (e: any) {
       setErr(e?.error || e?.detail || JSON.stringify(e));
     } finally {

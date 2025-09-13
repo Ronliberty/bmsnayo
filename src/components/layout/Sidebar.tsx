@@ -33,7 +33,7 @@ export function Sidebar({
     { name: "Jobs", href: "/dashboard/jobs", icon: Briefcase, restricted: false },
     { name: "Marketplace", href: "/dashboard/marketplace", icon: Store, restricted: false },
     { name: "sellers", href: "/dashboard/seller", icon: Store, restricted: false },
-    
+     { name: "finance", href: "/dashboard/finance", icon: Store, restricted: false },
     
  
 
