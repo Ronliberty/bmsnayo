@@ -24,7 +24,7 @@ export function MobileNav({
     { name: "Marketplace", href: "/dashboard/marketplace", icon: Store },
     {
       name: "Analytics",
-      href: "/dashboard/analytics",
+      href: "/dashboard/finance",
       icon: BarChart2,
       restricted: !isSubscribed,
       tooltip: "Subscribe to access Analytics",
