@@ -1,0 +1,117 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ShoppingCart, Heart } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+
+type Media = { id: string; media_type: string; file?: string; link?: string };
+
+type MarketplaceItem = {
+  id: string;
+  title: string;
+  description: string;
+  price: string;
+  currency: string;
+  seller: number;
+  seller_name: string;
+  delivery_type?: "instant" | "manual";
+  media?: Media[];
+};
+
+type Order = {
+  id: string;
+  status: string;
+  item: MarketplaceItem;
+  created_at: string;
+};
+
+export default function OrderPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { access, user } = useAuth();
+  const orderId = params.orderId;
+
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!access) return;
+
+    async function fetchOrder() {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/market/orders/${orderId}/`, {
+          headers: { Authorization: `Bearer ${access}` },
+        });
+        if (!res.ok) throw new Error("Failed to fetch order");
+        const data = await res.json();
+        setOrder(data);
+      } catch (e: any) {
+        setErr(e.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchOrder();
+  }, [access, orderId]);
+
+  if (loading) return <p className="p-6">Loading order...</p>;
+  if (err) return <p className="p-6 text-red-600">{err}</p>;
+  if (!order) return <p className="p-6">Order not found</p>;
+
+  const { item, status, created_at } = order;
+  const isOwner = user?.id === item.seller;
+
+  return (
+    <div className="p-6 space-y-6">
+      <h2 className="text-2xl font-bold">Order #{order.id}</h2>
+      <p className="text-sm text-muted-foreground">Status: {status}</p>
+      <p className="text-sm text-muted-foreground">Created at: {new Date(created_at).toLocaleString()}</p>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{item.title}</CardTitle>
+          <p className="text-xs text-muted-foreground">{item.seller_name}</p>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {item.media && item.media.length > 0 ? (
+            <img
+              src={item.media[0].file || item.media[0].link}
+              alt={item.title}
+              className="w-full h-40 object-cover rounded"
+              onError={e => (e.currentTarget.src = "/placeholder.png")}
+            />
+          ) : (
+            <div className="h-40 bg-muted rounded flex items-center justify-center text-sm">
+              No preview
+            </div>
+          )}
+
+          <p className="text-sm">{item.description}</p>
+          <p className="mt-2 font-semibold">
+            {new Intl.NumberFormat("en-US", { style: "currency", currency: item.currency }).format(Number(item.price))}
+          </p>
+          <p className="text-xs text-muted-foreground">Delivery: {item.delivery_type ?? "manual"}</p>
+        </CardContent>
+        <CardFooter className="flex gap-2">
+          {isOwner ? (
+            <p className="text-sm text-muted-foreground italic">This is your item</p>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => router.push("/dashboard/marketplace")}
+            >
+              Back to Marketplace
+            </Button>
+           
+          )}
+           <Button onClick={() => router.push("/dashboard/marketplace/orders")}>Orders</Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}

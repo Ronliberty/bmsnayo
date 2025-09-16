@@ -1,102 +1,117 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  created_at: string;
-  is_read: boolean;
-}
-
-// ------------------ Page Component -------------------
-export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+export default function BuyerNotificationsPage() {
+  const { access } = useAuth();
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchNotifications = async () => {
+    async function fetchNotifications() {
+      if (!access) return;
       try {
-        const res = await fetch("http://localhost:8000/api/notifications/", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access")}`, // assumes you store token in localStorage
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch notifications");
-        }
-
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/notify/notifications/`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${access}`,
+            },
+          }
+        );
+        if (!res.ok) throw new Error("Failed to fetch notifications");
         const data = await res.json();
         setNotifications(data);
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching notifications:", error);
       } finally {
         setLoading(false);
       }
-    };
-
+    }
     fetchNotifications();
-  }, []);
+  }, [access]);
 
-  if (loading) {
-    return <div className="p-6">Loading notifications...</div>;
-  }
+  const handleMarkRead = async (id: number) => {
+    if (!access) return;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/notify/notifications/${id}/mark_read/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${access}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to mark as read");
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      );
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!access) return;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/notify/notifications/${id}/`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${access}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to delete notification");
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
+  };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Bell className="w-6 h-6" /> Notifications
-      </h1>
+    <div className="p-6 space-y-4">
+      <h2 className="text-2xl font-bold">My Notifications</h2>
+      {loading && <p>Loading...</p>}
+      {notifications.length === 0 && !loading && <p>No notifications found.</p>}
 
-      <div className="grid gap-4">
-        {notifications.length === 0 ? (
-          <p className="text-muted-foreground">No notifications yet 🎉</p>
-        ) : (
-          notifications.map((n) => (
-            <Card
-              key={n.id}
-              className={`transition ${
-                !n.is_read ? "border-blue-500 shadow-md" : "opacity-80"
-              }`}
-            >
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>{n.title}</CardTitle>
-                  <CardDescription>
-                    {new Date(n.created_at).toLocaleString()}
-                  </CardDescription>
-                </div>
-                <Badge
-                  variant={!n.is_read ? "default" : "outline"}
-                  className="capitalize"
-                >
-                  {n.type}
-                </Badge>
-              </CardHeader>
-              <CardContent>
-                <p>{n.message}</p>
-                {n.type === "job" && (
-                  <Button size="sm" className="mt-3">
-                    View Job
-                  </Button>
-                )}
-                {n.type === "payment" && (
-                  <Button size="sm" className="mt-3">
-                    View Transaction
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+      {notifications.map((n) => (
+        <Card key={n.id}>
+          <CardHeader>
+            <CardTitle>
+              {n.title || "Notification"}{" "}
+              {!n.is_read && (
+                <span className="ml-2 px-2 py-1 text-xs bg-red-500 text-white rounded-full">
+                  New
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>{n.message}</p>
+            <div className="flex gap-2 mt-2">
+              {!n.is_read && (
+                <Button onClick={() => handleMarkRead(n.id)}>
+                  Mark as Read
+                </Button>
+              )}
+              <Button
+                variant="destructive"
+                onClick={() => handleDelete(n.id)}
+              >
+                Delete
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

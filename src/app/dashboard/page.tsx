@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectTrigger,
@@ -15,14 +11,15 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Globe } from "lucide-react";
-import { useAuth } from "@/context/AuthContext"; // get access token
+import { useAuth } from "@/context/AuthContext";
 
 type Article = {
   id: string;
   title: string;
   url: string;
   summary: string;
-  source: { name: string; reliability_score: number };
+  source: string;
+  source_reliability_at_fetch: number;
   topics: string[];
   language: string;
   region: string;
@@ -31,15 +28,16 @@ type Article = {
 };
 
 export default function DashboardPage() {
-  const { access } = useAuth(); // access token from AuthContext
+  const { access } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
   const [region, setRegion] = useState("all");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<{ [id: string]: boolean }>({});
 
   useEffect(() => {
     async function fetchArticles() {
-      if (!access) return; // wait until logged in
+      if (!access) return;
       setLoading(true);
       setErr(null);
       try {
@@ -48,7 +46,7 @@ export default function DashboardPage() {
           {
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${access}`, // 🔑 JWT token
+              Authorization: `Bearer ${access}`,
             },
           }
         );
@@ -59,7 +57,7 @@ export default function DashboardPage() {
         }
 
         const data = await res.json();
-        setArticles(data); // assuming API returns a list
+        setArticles(data);
       } catch (e: any) {
         setErr(e.message);
       } finally {
@@ -74,6 +72,28 @@ export default function DashboardPage() {
   const filteredArticles = articles.filter(
     (a) => region === "all" || a.region === region
   );
+
+  function toggleExpand(id: string) {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function getPreview(text: string, wordLimit = 100) {
+    const words = text.split(/\s+/);
+    if (words.length <= wordLimit) return { preview: text, remaining: "" };
+    return {
+      preview: words.slice(0, wordLimit).join(" "),
+      remaining: words.slice(wordLimit).join(" "),
+    };
+  }
+
+  function formatDate(dateString: string) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -96,7 +116,7 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-2">
+            <p className="text-sm text-muted-foreground mb-2 leading-relaxed tracking-wide">
               {featured.summary}
             </p>
             <a
@@ -111,60 +131,71 @@ export default function DashboardPage() {
       )}
 
       {/* Filters */}
-      <div className="flex items-center justify-between">
-        <Tabs defaultValue="all">
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="AI">AI</TabsTrigger>
-            <TabsTrigger value="Jobs">Jobs</TabsTrigger>
-            <TabsTrigger value="Market">Market</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <Select onValueChange={(val) => setRegion(val)}>
-          <SelectTrigger className="w-[160px]">
-            <Globe className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Filter by Region" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">🌍 All Regions</SelectItem>
-            <SelectItem value="US">🇺🇸 United States</SelectItem>
-            <SelectItem value="EU">🇪🇺 Europe</SelectItem>
-            <SelectItem value="Global">🌐 Global</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+     
 
       {/* News List */}
       <div className="space-y-4">
-        {filteredArticles.map((article) => (
-          <Card key={article.id}>
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">
-                {article.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-2">
-                {article.summary}
-              </p>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  {article.source.name} • Reliability:{" "}
-                  {article.source.reliability_score}%
-                </span>
-                <span>{article.published_at}</span>
-              </div>
-              <a
-                href={article.url}
-                className="text-primary text-sm font-medium hover:underline mt-2 inline-block"
-                target="_blank"
-              >
-                Read more →
-              </a>
-            </CardContent>
-          </Card>
-        ))}
+        {filteredArticles.map((article) => {
+          const { preview, remaining } = getPreview(article.summary, 100);
+          const isExpanded = expanded[article.id];
+
+          return (
+            <Card key={article.id}>
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">
+                  {article.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* Summary with toggle */}
+                <p className="text-sm text-muted-foreground mb-2 leading-relaxed tracking-wide">
+                  {preview}
+                  {!isExpanded && remaining && "..."}
+                  {isExpanded && remaining && (
+                    <span className="inline"> {remaining}</span>
+                  )}
+                </p>
+
+                {/* Meta info */}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    {article.source} • Reliability:{" "}
+                    {article.source_reliability_at_fetch}%
+                  </span>
+                  <span>{formatDate(article.published_at)}</span>
+                </div>
+
+                {/* Buttons */}
+                {!isExpanded && remaining && (
+                  <button
+                    onClick={() => toggleExpand(article.id)}
+                    className="text-primary text-sm font-medium hover:underline mt-2"
+                  >
+                    Read more
+                  </button>
+                )}
+
+                {isExpanded && (
+                  <div className="flex items-center gap-4 mt-2">
+                    <button
+                      onClick={() => toggleExpand(article.id)}
+                      className="text-primary text-sm font-medium hover:underline"
+                    >
+                      Show less
+                    </button>
+                    <a
+                      href={article.url}
+                      className="text-primary text-sm font-medium hover:underline"
+                      target="_blank"
+                    >
+                      Explore →
+                    </a>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

@@ -74,7 +74,7 @@ export default function FinancePage() {
         {tab === "deposit" && (
           <Card className="p-6 shadow-md">
             <h2 className="text-xl font-semibold mb-4">Deposit Funds</h2>
-            <DepositWidget />
+            <DepositWidget  />
           </Card>
         )}
 
