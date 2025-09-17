@@ -32,6 +32,7 @@ export function Sidebar({
     { name: "News", href: "/dashboard", icon: Home, restricted: false },
     { name: "Jobs", href: "/dashboard/jobs", icon: Briefcase, restricted: false },
     { name: "Marketplace", href: "/dashboard/marketplace", icon: Store, restricted: false },
+    { name: "orders", href: "/dashboard/marketplace/sales", icon: Store, restricted: false },
     { name: "sellers", href: "/dashboard/seller", icon: Store, restricted: false },
      { name: "finance", href: "/dashboard/finance", icon: Store, restricted: false },
     
@@ -40,7 +41,7 @@ export function Sidebar({
     // Restricted items
     {
       name: "Analytics",
-      href: "/dashboard/analytics",
+      href: "/dashboard/finance",
       icon: BarChart2,
       restricted: !isSubscribed,
       tooltip: "Subscribe",

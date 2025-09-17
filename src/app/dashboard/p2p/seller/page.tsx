@@ -120,7 +120,7 @@ export default function SellerOrdersPage() {
               <p><strong>Delivery Type:</strong> {order.item.delivery_type ?? 'manual'}</p>
 
               <div className="mt-2">
-                <Link href={`/dashboard/market/orders/${order.id}`}>
+                <Link href={`/dashboard/marketplace/orders/${order.id}`}>
                   <Button>Open Order</Button>
                 </Link>
               </div>
@@ -128,7 +128,7 @@ export default function SellerOrdersPage() {
             <CardFooter>
               {/* optional quick actions */}
               {order.status === "in_escrow" && (
-                <Link href={`/dashboard/market/orders/${order.id}`}>
+                <Link href={`/dashboard/marketplace/orders/${order.id}`}>
                   <Button>Deliver / Upload</Button>
                 </Link>
               )}
