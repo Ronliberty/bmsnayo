@@ -13,6 +13,9 @@ import {
   Users,
   DollarSign,
   Lock,
+  Handshake,
+  Package,
+  BadgeDollarSign,  
 } from "lucide-react";
 
 type SidebarProps = {
@@ -32,22 +35,17 @@ export function Sidebar({
     { name: "News", href: "/dashboard", icon: Home, restricted: false },
     { name: "Jobs", href: "/dashboard/jobs", icon: Briefcase, restricted: false },
     { name: "Marketplace", href: "/dashboard/marketplace", icon: Store, restricted: false },
-    { name: "orders", href: "/dashboard/marketplace/sales", icon: Store, restricted: false },
-    { name: "sellers", href: "/dashboard/seller", icon: Store, restricted: false },
-     { name: "finance", href: "/dashboard/finance", icon: Store, restricted: false },
+    { name: "orders", href: "/dashboard/marketplace/sales", icon: Package, restricted: false },
+    { name: "sellers", href: "/dashboard/seller", icon: BadgeDollarSign, restricted: false },
+    { name: "Analytics", href: "/dashboard/finance", icon: BarChart2, restricted: false },
+    { name: "Partnerships", href: "/dashboard/partnerships", icon: Handshake, restricted: false },
     
  
 
     // Restricted items
+  
     {
-      name: "Analytics",
-      href: "/dashboard/finance",
-      icon: BarChart2,
-      restricted: !isSubscribed,
-      tooltip: "Subscribe",
-    },
-    {
-      name: "Partnerships",
+      name: "Groups",
       href: "/dashboard/partnerships",
       icon: Users,
       restricted: !isPartner,

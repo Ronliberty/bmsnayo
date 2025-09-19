@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import DeliveryViewer from "@/components/marketplace/DeliveryViewer";
 
 type Media = { id: string; media_type: string; file?: string; link?: string };
 
@@ -21,11 +21,21 @@ type MarketplaceItem = {
   media?: Media[];
 };
 
+type Delivery = {
+  id: string;
+  message?: string;
+  repo_url?: string;
+  login_details?: string;
+  file?: string;
+  submitted_at: string;
+};
+
 type Order = {
   id: string;
   status: string;
   item: MarketplaceItem;
   created_at: string;
+  delivery?: Delivery; // ✅ add delivery here
 };
 
 export default function OrderPage() {
@@ -63,14 +73,16 @@ export default function OrderPage() {
   if (err) return <p className="p-6 text-red-600">{err}</p>;
   if (!order) return <p className="p-6">Order not found</p>;
 
-  const { item, status, created_at } = order;
+  const { item, status, created_at, delivery } = order;
   const isOwner = user?.id === item.seller;
 
   return (
     <div className="p-6 space-y-6">
       <h2 className="text-2xl font-bold">Order #{order.id}</h2>
       <p className="text-sm text-muted-foreground">Status: {status}</p>
-      <p className="text-sm text-muted-foreground">Created at: {new Date(created_at).toLocaleString()}</p>
+      <p className="text-sm text-muted-foreground">
+        Created at: {new Date(created_at).toLocaleString()}
+      </p>
 
       <Card>
         <CardHeader>
@@ -83,7 +95,7 @@ export default function OrderPage() {
               src={item.media[0].file || item.media[0].link}
               alt={item.title}
               className="w-full h-40 object-cover rounded"
-              onError={e => (e.currentTarget.src = "/placeholder.png")}
+              onError={(e) => (e.currentTarget.src = "/placeholder.png")}
             />
           ) : (
             <div className="h-40 bg-muted rounded flex items-center justify-center text-sm">
@@ -93,13 +105,20 @@ export default function OrderPage() {
 
           <p className="text-sm">{item.description}</p>
           <p className="mt-2 font-semibold">
-            {new Intl.NumberFormat("en-US", { style: "currency", currency: item.currency }).format(Number(item.price))}
+            {new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: item.currency,
+            }).format(Number(item.price))}
           </p>
-          <p className="text-xs text-muted-foreground">Delivery: {item.delivery_type ?? "manual"}</p>
+          <p className="text-xs text-muted-foreground">
+            Delivery: {item.delivery_type ?? "manual"}
+          </p>
         </CardContent>
         <CardFooter className="flex gap-2">
           {isOwner ? (
-            <p className="text-sm text-muted-foreground italic">This is your item</p>
+            <p className="text-sm text-muted-foreground italic">
+              This is your item
+            </p>
           ) : (
             <Button
               variant="outline"
@@ -107,11 +126,17 @@ export default function OrderPage() {
             >
               Back to Marketplace
             </Button>
-           
           )}
-           <Button onClick={() => router.push("/dashboard/marketplace/orders")}>Orders</Button>
+          <Button onClick={() => router.push("/dashboard/marketplace/orders")}>
+            Orders
+          </Button>
         </CardFooter>
       </Card>
+
+      {/* ✅ Show delivery if exists */}
+   
+     <DeliveryViewer orderId={order.id} />
+
     </div>
   );
 }

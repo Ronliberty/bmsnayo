@@ -4,17 +4,30 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 interface Transaction {
-  id: string;
-  type: string; // deposit | payout
-  amount: number;
-  status: string;
+  id: number; 
+  type:
+    | "deposit"
+    | "purchase"
+    | "fee"
+    | "payout"
+    | "refund"
+    | "reserve"
+    | "release"
+    | "adjustment";
+  amount: number | string; // backend may return string
+  status?: "completed" | "pending" | "failed"; 
+  provider?: string | null;
+  provider_event_id?: string | null;
+  related_object_type?: string | null;
+  related_object_id?: string | null;
+  metadata?: Record<string, any>;
   created_at: string;
 }
 
 export default function TransactionsTable() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const { access } = useAuth(); // ✅ get token from context
+  const { access } = useAuth();
 
   useEffect(() => {
     async function fetchTransactions() {
@@ -24,19 +37,23 @@ export default function TransactionsTable() {
           {
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${access}`, // ✅ add token
+              Authorization: `Bearer ${access}`,
             },
           }
         );
 
         if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.detail || "Failed to fetch transactions");
+          let errorMessage = "Failed to fetch transactions";
+          try {
+            const errorData = await res.json();
+            errorMessage = errorData.detail || errorMessage;
+          } catch {
+            // ignore JSON parse errors
+          }
+          throw new Error(errorMessage);
         }
 
         const data = await res.json();
-
-        // ✅ Ensure it's an array
         if (Array.isArray(data)) {
           setTransactions(data);
         } else {
@@ -57,6 +74,20 @@ export default function TransactionsTable() {
     return <div className="p-4 text-red-500">Error: {error}</div>;
   }
 
+  const getStatusClass = (status?: string) => {
+    if (!status) return "bg-gray-100 text-gray-800";
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "failed":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
     <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
       <table className="w-full text-sm">
@@ -70,20 +101,45 @@ export default function TransactionsTable() {
           </tr>
         </thead>
         <tbody>
-          {transactions.map((tx, i) => (
-            <tr
-              key={tx.id}
-              className={`transition-colors ${
-                i % 2 === 0 ? "bg-muted/30" : "bg-background"
-              } hover:bg-muted/50`}
-            >
-              <td className="p-3 font-mono text-xs text-muted-foreground">{tx.id}</td>
-              <td className="p-3 capitalize">{tx.type}</td>
-              <td className="p-3 font-medium">${tx.amount.toFixed(2)}</td>
-              <td className="p-3">{tx.status}</td>
-              <td className="p-3">{new Date(tx.created_at).toLocaleString()}</td>
+          {transactions.length === 0 ? (
+            <tr>
+              <td
+                colSpan={5}
+                className="p-4 text-center text-muted-foreground"
+              >
+                No transactions found
+              </td>
             </tr>
-          ))}
+          ) : (
+            transactions.map((tx, i) => (
+              <tr
+                key={tx.id}
+                className={`transition-colors ${
+                  i % 2 === 0 ? "bg-muted/30" : "bg-background"
+                } hover:bg-muted/50`}
+              >
+                <td className="p-3 font-mono text-xs text-muted-foreground">
+                  {tx.id}
+                </td>
+                <td className="p-3 capitalize">{tx.type}</td>
+                <td className="p-3 font-medium">
+                  ${Number(tx.amount).toFixed(2)}
+                </td>
+                <td className="p-3">
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(
+                      tx.status
+                    )}`}
+                  >
+                    {tx.status ?? "—"}
+                  </span>
+                </td>
+                <td className="p-3">
+                  {new Date(tx.created_at).toLocaleString()}
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
