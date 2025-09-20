@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -17,9 +23,9 @@ export default function SubscribeModal({ plan }: { plan: any }) {
     if (!access) return;
     setLoading(true);
     try {
-      await axios.post(
+      const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/auth/waitlist/join/`,
-        { plan: plan.id }, // ✅ sending "plan" instead of "plan_id"
+        { plan: plan.id }, // sending plan ID
         {
           headers: {
             Authorization: `Bearer ${access}`,
@@ -28,15 +34,23 @@ export default function SubscribeModal({ plan }: { plan: any }) {
         }
       );
 
+      console.log("Join waitlist success:", res.data);
       setJoined(true);
-    } catch (err) {
-      console.error("Join waitlist error:", err);
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        console.error("Join waitlist error:", {
+          status: err.response?.status,
+          data: err.response?.data,
+        });
+      } else {
+        console.error("Unexpected error:", err);
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  // ✅ Auto close modal after success
+  // Auto close modal after success
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (joined) {

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import axios from "axios";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import SubscribeModal from "@/components/subscription/SubscribeModal"; // ✅ import modal
 
 type Plan = {
   id: number;
@@ -15,10 +15,12 @@ type Plan = {
 };
 
 export default function SubscriptionPage() {
-  const { access } = useAuth(); 
+  const { access } = useAuth();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [joiningPlanId, setJoiningPlanId] = useState<number | null>(null); // track loading per plan
+  const [joinedPlanIds, setJoinedPlanIds] = useState<number[]>([]); // track which plans user joined
 
   // Mock current user subscription
   const currentPlan = "Free";
@@ -53,6 +55,32 @@ export default function SubscriptionPage() {
     fetchPlans();
   }, [access]);
 
+  // Join waitlist function
+  async function joinWaitlist(planId: number) {
+    if (!access) return;
+    setJoiningPlanId(planId);
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/waitlist/join/`,
+        { plan: planId },
+        {
+          headers: {
+            Authorization: `Bearer ${access}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Waitlist joined:", res.data);
+      setJoinedPlanIds((prev) => [...prev, planId]);
+    } catch (err: any) {
+      console.error("Join waitlist error:", err.response?.data || err.message);
+      alert(`Error joining waitlist: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setJoiningPlanId(null);
+    }
+  }
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">Subscription</h1>
@@ -63,38 +91,48 @@ export default function SubscriptionPage() {
       {loading && <p className="text-sm text-muted-foreground">Loading plans...</p>}
       {err && <p className="text-sm text-red-600">{err}</p>}
 
-      {!loading && !err && plans.map((plan) => (
-        <Card key={plan.id}>
-          <CardHeader>
-            <CardTitle>{plan.name} Plan</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p>
-              <span className="font-semibold">Price:</span>{" "}
-              {plan.price === 0 ? "Free" : `$${plan.price}/month`}
-            </p>
-            <ul className="space-y-1">
-              {plan.benefits.map((benefit, idx) => (
-                <li key={idx} className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span>{benefit}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter>
-            {plan.name === currentPlan && isSubscribed ? (
-              <Button variant="destructive">
-                <XCircle className="h-4 w-4 mr-2" />
-                Cancel Subscription
-              </Button>
-            ) : (
-              // ✅ use modal instead of button
-              <SubscribeModal plan={plan} />
-            )}
-          </CardFooter>
-        </Card>
-      ))}
+      {!loading &&
+        !err &&
+        plans.map((plan) => (
+          <Card key={plan.id}>
+            <CardHeader>
+              <CardTitle>{plan.name} Plan</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p>
+                <span className="font-semibold">Price:</span>{" "}
+                {plan.price === 0 ? "Free" : `$${plan.price}/month`}
+              </p>
+              <ul className="space-y-1">
+                {plan.benefits.map((benefit) => (
+                  <li key={benefit} className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span>{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter>
+              {plan.name === currentPlan && isSubscribed ? (
+                <Button variant="destructive">
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Cancel Subscription
+                </Button>
+              ) : joinedPlanIds.includes(plan.id) ? (
+                <p className="text-green-600 font-semibold">
+                  ✅ Successfully joined waitlist
+                </p>
+              ) : (
+                <Button
+                  disabled={joiningPlanId === plan.id}
+                  onClick={() => joinWaitlist(plan.id)}
+                >
+                  {joiningPlanId === plan.id ? "Joining..." : "Join Waitlist"}
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        ))}
 
       {/* Custom Plan */}
       <Card>
