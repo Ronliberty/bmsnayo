@@ -9,23 +9,33 @@ import { Switch } from "@/components/ui/switch";
 import { LogOut, Trash2, Key } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useAccount, useUpdateAccount, useDeleteAccount } from "@/app/hooks/useAccount";
+import { useState, useEffect } from "react";
+import {
+  useAccount,
+  useUpdateAccount,
+  useDeleteAccount,
+} from "@/app/hooks/useAccount";
+import Link from "next/link";
 
 export default function SettingsPage() {
-  const { logout, access } = useAuth(); 
+  const { logout, access } = useAuth();
   const router = useRouter();
 
-  if (!access) {
-  return <p>You must be logged in to view settings.</p>;
-}
-
-  const { data: account, isLoading } = useAccount(access);
-  const updateAccount = useUpdateAccount(access);
-  const deleteAccount = useDeleteAccount(access);
+  // ✅ hooks must always be called, even if access is null
+  const { data: account, isLoading } = useAccount(access ?? "");
+  const updateAccount = useUpdateAccount(access ?? "");
+  const deleteAccount = useDeleteAccount(access ?? "");
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
+  // preload existing account values when available
+  useEffect(() => {
+    if (account) {
+      setEmail(account.email || "");
+      setPhone(account.phone || "");
+    }
+  }, [account]);
 
   async function handleLogout() {
     await logout();
@@ -43,6 +53,11 @@ export default function SettingsPage() {
         router.push("/");
       },
     });
+  }
+
+  // show message if not logged in
+  if (!access) {
+    return <p>You must be logged in to view settings.</p>;
   }
 
   return (
@@ -75,7 +90,7 @@ export default function SettingsPage() {
                     <Label>Email</Label>
                     <Input
                       type="email"
-                      value={email || account?.email || ""}
+                      value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
@@ -83,11 +98,14 @@ export default function SettingsPage() {
                     <Label>Phone Number</Label>
                     <Input
                       type="tel"
-                      value={phone || account?.phone || ""}
+                      value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
                   </div>
-                  <Button onClick={handleSave} disabled={updateAccount.isPending}>
+                  <Button
+                    onClick={handleSave}
+                    disabled={updateAccount.isPending}
+                  >
                     {updateAccount.isPending ? "Saving..." : "Save Changes"}
                   </Button>
                 </>
@@ -105,10 +123,12 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <span>Change Password</span>
-                <Button variant="outline" size="sm">
-                  <Key className="h-4 w-4 mr-2" />
-                  Update
-                </Button>
+                <Link href="/dashboard/settings/change-password">
+                  <Button variant="outline" size="sm">
+                    <Key className="h-4 w-4 mr-2" />
+                    Update
+                  </Button>
+                </Link>
               </div>
               <div className="flex items-center justify-between">
                 <span>Enable Two-Factor Authentication</span>

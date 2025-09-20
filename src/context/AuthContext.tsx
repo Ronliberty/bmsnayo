@@ -59,31 +59,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   // ------------------ REFRESH ------------------
-  async function refresh(): Promise<boolean> {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // important for cookie
-        body: JSON.stringify({ react_app: process.env.NEXT_PUBLIC_APP_UUID }),
-      });
-      const data = await res.json();
+ async function refresh(): Promise<boolean> {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh/`, {
+      method: "POST",
+      credentials: "include", // send cookies
+    });
 
-      if (!res.ok) {
-        setAccess(null);
-        setUser(null);
-        return false;
-      }
-
-      setAccess(data.access);
-      setUser(data.user ?? null);
-      return true;
-    } catch (err) {
+    if (!res.ok) {
       setAccess(null);
       setUser(null);
       return false;
     }
+
+    const data = await res.json();
+    setAccess(data.access);
+    setUser(data.user ?? null);
+    return true;
+  } catch (err) {
+    setAccess(null);
+    setUser(null);
+    return false;
   }
+}
+
 
   // ------------------ LOGOUT ------------------
   async function logout() {
