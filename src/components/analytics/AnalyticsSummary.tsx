@@ -14,9 +14,16 @@ export function AnalyticsSummary() {
 
   useEffect(() => {
     async function fetchSummary() {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/analytics/summary/`);
-      const data = await res.json();
-      setSummary(data);
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/analytics/summary/`,
+          { credentials: "include" } // ensure auth cookies
+        );
+        const data = await res.json();
+        setSummary(data);
+      } catch (err) {
+        console.error("Failed to load summary", err);
+      }
     }
     fetchSummary();
   }, []);

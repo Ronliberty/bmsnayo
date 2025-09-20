@@ -5,24 +5,26 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import SubscribeModal from "@/components/subscription/SubscribeModal"; // ✅ import modal
 
 type Plan = {
+  id: number;
   name: string;
   price: number;
   benefits: string[];
 };
 
 export default function SubscriptionPage() {
-  const { access } = useAuth(); // ✅ get token
+  const { access } = useAuth(); 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // Mock current user subscription for demonstration
+  // Mock current user subscription
   const currentPlan = "Free";
   const isSubscribed = false;
 
-  // Fetch plans from API
+  // Fetch plans
   useEffect(() => {
     async function fetchPlans() {
       if (!access) return;
@@ -62,13 +64,14 @@ export default function SubscriptionPage() {
       {err && <p className="text-sm text-red-600">{err}</p>}
 
       {!loading && !err && plans.map((plan) => (
-        <Card key={plan.name}>
+        <Card key={plan.id}>
           <CardHeader>
             <CardTitle>{plan.name} Plan</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <p>
-              <span className="font-semibold">Price:</span> {plan.price === 0 ? "Free" : `$${plan.price}/month`}
+              <span className="font-semibold">Price:</span>{" "}
+              {plan.price === 0 ? "Free" : `$${plan.price}/month`}
             </p>
             <ul className="space-y-1">
               {plan.benefits.map((benefit, idx) => (
@@ -86,10 +89,8 @@ export default function SubscriptionPage() {
                 Cancel Subscription
               </Button>
             ) : (
-              <Button>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Subscribe
-              </Button>
+              // ✅ use modal instead of button
+              <SubscribeModal plan={plan} />
             )}
           </CardFooter>
         </Card>
