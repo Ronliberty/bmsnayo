@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Mail, Shield, Wallet } from "lucide-react";
-import { useAuth } from "@/context/AuthContext"; // ✅ get access token
+import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
 
 interface FreelancerProfile {
   id: number;
@@ -17,7 +20,7 @@ interface FreelancerProfile {
   rating_avg: string;
   rating_count: number;
   created_at: string;
-  user?: { username?: string; email?: string }; // extend if API sends user info
+  user?: { username?: string; email?: string };
 }
 
 export default function ProfilePage() {
@@ -25,27 +28,39 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<FreelancerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [editing, setEditing] = useState(true);
+
+  // editable fields
+  const [bio, setBio] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [availability, setAvailability] = useState("");
+  const [skills, setSkills] = useState("");
 
   useEffect(() => {
     async function fetchProfile() {
       if (!access) return;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/freelancer/`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${access}`,
-          },
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.detail || "Failed to fetch profile");
-        }
-
-        const data = await res.json();
+        const { data } = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/profile/freelancer/`,
+          { headers: { Authorization: `Bearer ${access}` } }
+        );
         setProfile(data);
+
+        // prefill form
+        setBio(data.bio || "");
+        setHourlyRate(data.hourly_rate || "");
+        setCurrency(data.currency || "USD");
+        setAvailability(data.availability || "");
+        setSkills(data.skills?.join(", ") || "");
+
+        if (data.bio || data.skills?.length > 0) {
+          setEditing(false);
+        }
       } catch (error: any) {
-        setErr(error.message);
+        setErr(error.response?.data?.detail || "Failed to fetch profile");
       } finally {
         setLoading(false);
       }
@@ -53,12 +68,37 @@ export default function ProfilePage() {
     fetchProfile();
   }, [access]);
 
-  // pick first letter of username/email/id
-  const getInitial = () => {
-    if (!profile) return "?";
-    if (profile.user?.username) return profile.user.username.charAt(0).toUpperCase();
-    if (profile.user?.email) return profile.user.email.charAt(0).toUpperCase();
-    return String(profile.id).charAt(0);
+  const saveProfile = async () => {
+    if (!access) return;
+    setSaving(true);
+    try {
+      const { data } = await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/profile/freelancer/`,
+        {
+          bio,
+          hourly_rate: hourlyRate,
+          currency,
+          availability,
+          skills: skills.split(",").map((s) => s.trim()).filter((s) => s),
+        },
+        { headers: { Authorization: `Bearer ${access}` } }
+      );
+
+      // ✅ Update both profile & form states
+      setProfile(data);
+      setBio(data.bio || "");
+      setHourlyRate(data.hourly_rate || "");
+      setCurrency(data.currency || "USD");
+      setAvailability(data.availability || "");
+      setSkills(data.skills?.join(", ") || "");
+
+      setSuccess(true);
+      setEditing(false);
+    } catch (error: any) {
+      setErr(error.response?.data?.detail || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -67,40 +107,31 @@ export default function ProfilePage() {
 
       {loading && <p className="text-muted-foreground">Loading profile...</p>}
       {err && <p className="text-red-500">{err}</p>}
+      {success && <p className="text-green-600">Profile successfully updated!</p>}
 
       {!loading && !err && profile && (
         <>
-          {/* Public Profile */}
           <Card>
             <CardHeader>
               <CardTitle>Public Profile</CardTitle>
             </CardHeader>
-            <CardContent className="flex items-center gap-6">
-              {/* Avatar with initials */}
-              <div className="w-24 h-24 flex items-center justify-center rounded-full border bg-primary text-white text-3xl font-bold">
-                {getInitial()}
-              </div>
-
-              <div className="space-y-2">
-                <h2 className="text-xl font-bold">
-                  {profile.user?.username || `Freelancer #${profile.id}`}
-                </h2>
-                <p className="text-muted-foreground">{profile.bio}</p>
-                <div className="flex gap-2 flex-wrap">
-                  {profile.skills.length > 0 ? (
-                    profile.skills.map((skill, idx) => (
-                      <Badge key={idx}>{skill}</Badge>
-                    ))
-                  ) : (
-                    <Badge variant="outline">No skills added</Badge>
-                  )}
-                </div>
-                <Button size="sm">Contact</Button>
+            <CardContent>
+              <h2 className="text-xl font-bold">
+                {profile.user?.username || `Freelancer #${profile.id}`}
+              </h2>
+              <p className="text-muted-foreground">{profile.bio}</p>
+              <div className="flex gap-2 flex-wrap">
+                {profile.skills.length > 0 ? (
+                  profile.skills.map((skill, idx) => (
+                    <Badge key={idx}>{skill}</Badge>
+                  ))
+                ) : (
+                  <Badge variant="outline">No skills added</Badge>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Private Data */}
           <Card>
             <CardHeader>
               <CardTitle>Private Data</CardTitle>
@@ -130,8 +161,64 @@ export default function ProfilePage() {
                   <span>Availability: {profile.availability}</span>
                 </div>
               </div>
+
+              {!editing && (
+                <Button variant="outline" onClick={() => setEditing(true)}>
+                  Edit Profile
+                </Button>
+              )}
             </CardContent>
           </Card>
+
+          {/* Profile Form */}
+          {editing && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{profile.bio ? "Edit Profile" : "Complete Your Profile"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Textarea
+                  placeholder="Bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                />
+                <Input
+                  placeholder="Hourly Rate"
+                  value={hourlyRate}
+                  onChange={(e) => setHourlyRate(e.target.value)}
+                />
+                <Input
+                  placeholder="Currency (e.g. USD)"
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                />
+                <Input
+                  placeholder="Availability"
+                  value={availability}
+                  onChange={(e) => setAvailability(e.target.value)}
+                />
+                <Input
+                  placeholder="Skills (comma separated)"
+                  value={skills}
+                  onChange={(e) => setSkills(e.target.value)}
+                />
+
+                <div className="flex gap-3">
+                  <Button onClick={saveProfile} disabled={saving}>
+                    {saving ? "Saving..." : "Save Profile"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditing(false)}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>

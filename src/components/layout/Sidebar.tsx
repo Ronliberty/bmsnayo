@@ -35,11 +35,10 @@ export function Sidebar({
     { name: "News", href: "/dashboard", icon: Home, restricted: false },
     { name: "Jobs", href: "/dashboard/jobs", icon: Briefcase, restricted: false },
     { name: "Marketplace", href: "/dashboard/marketplace", icon: Store, restricted: false },
-    { name: "orders", href: "/dashboard/marketplace/sales", icon: Package, restricted: false },
-    { name: "sellers", href: "/dashboard/seller", icon: BadgeDollarSign, restricted: false },
+    
     { name: "Analytics", href: "/dashboard/finance", icon: BarChart2, restricted: false },
     { name: "Partnerships", href: "/dashboard/partnerships", icon: Handshake, restricted: false },
-    
+    { name: "sell", href: "/dashboard/seller/selling", icon: BadgeDollarSign, restricted: false },
  
 
     // Restricted items
@@ -49,15 +48,9 @@ export function Sidebar({
       href: "/dashboard/partnerships",
       icon: Users,
       restricted: !isPartner,
-      tooltip: "Subscribe",
+      tooltip: "coming soon",
     },
-    {
-      name: "Seller Program",
-      href: "/seller",
-      icon: DollarSign,
-      restricted: !isSeller,
-      tooltip: "Subscribe",
-    },
+    
     { name: "Subscription", href: "/dashboard/subscription", icon: User, restricted: false },
 
     { name: "Settings", href: "/dashboard/settings", icon: Settings, restricted: false },

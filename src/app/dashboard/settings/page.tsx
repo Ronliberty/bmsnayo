@@ -7,16 +7,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { LogOut, Trash2, Key } from "lucide-react";
-import { useAuth } from "@/context/AuthContext"; // 👈 import auth context
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useAccount, useUpdateAccount, useDeleteAccount } from "@/app/hooks/useAccount";
 
 export default function SettingsPage() {
-  const { logout } = useAuth(); // 👈 grab logout from context
+  const { logout, access } = useAuth(); 
   const router = useRouter();
 
+  if (!access) {
+  return <p>You must be logged in to view settings.</p>;
+}
+
+  const { data: account, isLoading } = useAccount(access);
+  const updateAccount = useUpdateAccount(access);
+  const deleteAccount = useDeleteAccount(access);
+
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
   async function handleLogout() {
-    await logout();            // clear tokens + user
-    router.push("/");     // redirect to login page
+    await logout();
+    router.push("/");
+  }
+
+  function handleSave() {
+    updateAccount.mutate({ email, phone });
+  }
+
+  function handleDelete() {
+    deleteAccount.mutate(undefined, {
+      onSuccess: () => {
+        logout();
+        router.push("/");
+      },
+    });
   }
 
   return (
@@ -41,15 +67,31 @@ export default function SettingsPage() {
               <CardTitle>Account Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label>Email</Label>
-                <Input type="email" placeholder="user@email.com" />
-              </div>
-              <div>
-                <Label>Phone Number</Label>
-                <Input type="tel" placeholder="+1 234 567 890" />
-              </div>
-              <Button>Save Changes</Button>
+              {isLoading ? (
+                <p>Loading...</p>
+              ) : (
+                <>
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={email || account?.email || ""}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Phone Number</Label>
+                    <Input
+                      type="tel"
+                      value={phone || account?.phone || ""}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={handleSave} disabled={updateAccount.isPending}>
+                    {updateAccount.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -106,14 +148,20 @@ export default function SettingsPage() {
                 variant="outline"
                 className="w-full"
                 size="lg"
-                onClick={handleLogout} // 👈 hook up logout
+                onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
-              <Button variant="destructive" className="w-full" size="lg">
+              <Button
+                variant="destructive"
+                className="w-full"
+                size="lg"
+                onClick={handleDelete}
+                disabled={deleteAccount.isPending}
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete Account
+                {deleteAccount.isPending ? "Deleting..." : "Delete Account"}
               </Button>
             </CardContent>
           </Card>
