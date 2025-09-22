@@ -48,10 +48,10 @@ export default function SellingPage() {
           </ul>
           <div className="flex gap-3 pt-4">
             <Button asChild>
-              <a href="dashboard/seller/application">Sell</a>
+              <Link href="dashboard/seller/application">Sell</Link>
             </Button>
             <Button asChild variant="secondary">
-              <a href="/dashboard/marketplace/sales">Orders</a>
+              <Link href="/dashboard/marketplace/sales">Orders</Link>
             </Button>
           </div>
         </div>
