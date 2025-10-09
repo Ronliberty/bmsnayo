@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy-vercel": "curl -X POST https://api.vercel.com/v1/integrations/deploy/prj_mtixKOEZqUD3M2TafRylm9qCeQ27/5F3Bjh4q5e"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
