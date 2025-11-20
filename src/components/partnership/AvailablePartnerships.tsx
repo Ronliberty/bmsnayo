@@ -114,83 +114,194 @@ export default function AvailablePartnerships() {
   if (loading) return <p>Loading available partnerships...</p>;
 
   return (
+    // <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    //   {partnerships.map((p) => (
+    //     <Card key={p.id} className="p-4 animate__animated animate__fadeIn">
+    //       <h3 className="font-semibold">{p.title}</h3>
+    //       <p className="text-sm text-muted-foreground">{p.description}</p>
+    //       <p className="text-xs text-muted-foreground mt-1">
+    //         Commission: {p.commission_type === "percentage" ? `${p.commission_value}%` : `$${p.commission_value}`}
+    //       </p>
+    //       {p.referral_enabled && (
+    //         <p className="text-xs text-muted-foreground">Referral Rate: {p.referral_commission_rate}%</p>
+    //       )}
+    //       <div className="mt-2">
+    //         <Button onClick={() => handleJoinClick(p.id)}>Join Program</Button>
+    //       </div>
+    //     </Card>
+    //   ))}
+
+    //   {/* Application Form */}
+    //   {activeApplicationId && (
+    //     <div className="mt-8 p-4 border rounded space-y-4 col-span-full">
+    //       <h2 className="text-xl font-bold">Application Questions</h2>
+    //       {appLoading && <p>Loading questions...</p>}
+    //       {appError && <p className="text-red-600">{appError}</p>}
+    //       {appSuccess && <p className="text-green-600">Application submitted successfully!</p>}
+
+    //       {!appLoading &&
+    //         questions.map((q) => (
+    //           <div key={q.id} className="flex flex-col">
+    //             <label className="font-medium">
+    //               {q.question_text} {q.required && "*"}
+    //             </label>
+
+    //             {q.question_type === "text" && (
+    //               <input
+    //                 type="text"
+    //                 className="border px-3 py-2 rounded"
+    //                 value={answers[q.id] || ""}
+    //                 onChange={(e) => handleChangeAnswer(q, e.target.value)}
+    //               />
+    //             )}
+
+    //             {q.question_type === "boolean" && (
+    //               <select
+    //                 className="border px-3 py-2 rounded"
+    //                 value={answers[q.id] === true ? "true" : answers[q.id] === false ? "false" : ""}
+    //                 onChange={(e) => handleChangeAnswer(q, e.target.value)}
+    //               >
+    //                 <option value="">Select</option>
+    //                 <option value="true">Yes</option>
+    //                 <option value="false">No</option>
+    //               </select>
+    //             )}
+
+    //             {q.question_type === "select" && (
+    //               <select
+    //                 className="border px-3 py-2 rounded"
+    //                 value={answers[q.id] || ""}
+    //                 onChange={(e) => handleChangeAnswer(q, e.target.value)}
+    //               >
+    //                 <option value="">Select</option>
+    //                 {q.options?.map((opt) => (
+    //                   <option key={opt} value={opt}>
+    //                     {opt}
+    //                   </option>
+    //                 ))}
+    //               </select>
+    //             )}
+    //           </div>
+    //         ))}
+
+    //       {questions.length > 0 && (
+    //         <Button onClick={handleSubmitApplication} disabled={appLoading}>
+    //           {appLoading ? "Submitting..." : "Submit Application"}
+    //         </Button>
+    //       )}
+    //     </div>
+    //   )}
+    // </div>
+
+
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {partnerships.map((p) => (
-        <Card key={p.id} className="p-4 animate__animated animate__fadeIn">
-          <h3 className="font-semibold">{p.title}</h3>
-          <p className="text-sm text-muted-foreground">{p.description}</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Commission: {p.commission_type === "percentage" ? `${p.commission_value}%` : `$${p.commission_value}`}
-          </p>
-          {p.referral_enabled && (
-            <p className="text-xs text-muted-foreground">Referral Rate: {p.referral_commission_rate}%</p>
-          )}
-          <div className="mt-2">
-            <Button onClick={() => handleJoinClick(p.id)}>Join Program</Button>
+  {partnerships.map((p) => (
+    <Card
+      key={p.id}
+      className="p-4 animate__animated animate__fadeIn flex flex-col space-y-2"
+    >
+      <h3 className="font-semibold text-lg">{p.title}</h3>
+
+      <p className="text-sm text-muted-foreground break-words">
+        {p.description}
+      </p>
+
+      <p className="text-xs text-muted-foreground mt-1">
+        Commission:{" "}
+        {p.commission_type === "percentage"
+          ? `${p.commission_value}%`
+          : `$${p.commission_value}`}
+      </p>
+
+      {p.referral_enabled && (
+        <p className="text-xs text-muted-foreground">
+          Referral Rate: {p.referral_commission_rate}%
+        </p>
+      )}
+
+      <div className="mt-2">
+        <Button className="w-full sm:w-auto" onClick={() => handleJoinClick(p.id)}>
+          Join Program
+        </Button>
+      </div>
+    </Card>
+  ))}
+
+  {/* Application Form */}
+  {activeApplicationId && (
+    <div className="mt-6 p-4 border rounded space-y-4 col-span-full bg-card shadow-sm">
+      <h2 className="text-xl font-bold">Application Questions</h2>
+
+      {appLoading && <p>Loading questions...</p>}
+      {appError && <p className="text-red-600">{appError}</p>}
+      {appSuccess && <p className="text-green-600">Application submitted successfully!</p>}
+
+      {!appLoading &&
+        questions.map((q) => (
+          <div key={q.id} className="flex flex-col space-y-1">
+            <label className="font-medium text-sm">
+              {q.question_text} {q.required && "*"}
+            </label>
+
+            {/* Text Input */}
+            {q.question_type === "text" && (
+              <input
+                type="text"
+                className="border px-3 py-2 rounded text-sm w-full"
+                value={answers[q.id] || ""}
+                onChange={(e) => handleChangeAnswer(q, e.target.value)}
+              />
+            )}
+
+            {/* Boolean Select */}
+            {q.question_type === "boolean" && (
+              <select
+                className="border px-3 py-2 rounded text-sm w-full"
+                value={
+                  answers[q.id] === true
+                    ? "true"
+                    : answers[q.id] === false
+                    ? "false"
+                    : ""
+                }
+                onChange={(e) => handleChangeAnswer(q, e.target.value)}
+              >
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            )}
+
+            {/* Options Select */}
+            {q.question_type === "select" && (
+              <select
+                className="border px-3 py-2 rounded text-sm w-full"
+                value={answers[q.id] || ""}
+                onChange={(e) => handleChangeAnswer(q, e.target.value)}
+              >
+                <option value="">Select</option>
+                {q.options?.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
-        </Card>
-      ))}
+        ))}
 
-      {/* Application Form */}
-      {activeApplicationId && (
-        <div className="mt-8 p-4 border rounded space-y-4 col-span-full">
-          <h2 className="text-xl font-bold">Application Questions</h2>
-          {appLoading && <p>Loading questions...</p>}
-          {appError && <p className="text-red-600">{appError}</p>}
-          {appSuccess && <p className="text-green-600">Application submitted successfully!</p>}
-
-          {!appLoading &&
-            questions.map((q) => (
-              <div key={q.id} className="flex flex-col">
-                <label className="font-medium">
-                  {q.question_text} {q.required && "*"}
-                </label>
-
-                {q.question_type === "text" && (
-                  <input
-                    type="text"
-                    className="border px-3 py-2 rounded"
-                    value={answers[q.id] || ""}
-                    onChange={(e) => handleChangeAnswer(q, e.target.value)}
-                  />
-                )}
-
-                {q.question_type === "boolean" && (
-                  <select
-                    className="border px-3 py-2 rounded"
-                    value={answers[q.id] === true ? "true" : answers[q.id] === false ? "false" : ""}
-                    onChange={(e) => handleChangeAnswer(q, e.target.value)}
-                  >
-                    <option value="">Select</option>
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                  </select>
-                )}
-
-                {q.question_type === "select" && (
-                  <select
-                    className="border px-3 py-2 rounded"
-                    value={answers[q.id] || ""}
-                    onChange={(e) => handleChangeAnswer(q, e.target.value)}
-                  >
-                    <option value="">Select</option>
-                    {q.options?.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            ))}
-
-          {questions.length > 0 && (
-            <Button onClick={handleSubmitApplication} disabled={appLoading}>
-              {appLoading ? "Submitting..." : "Submit Application"}
-            </Button>
-          )}
-        </div>
+      {questions.length > 0 && (
+        <Button
+          onClick={handleSubmitApplication}
+          disabled={appLoading}
+          className="w-full sm:w-auto"
+        >
+          {appLoading ? "Submitting..." : "Submit Application"}
+        </Button>
       )}
     </div>
+  )}
+</div>
+
   );
 }

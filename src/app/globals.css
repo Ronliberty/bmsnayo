@@ -141,3 +141,17 @@
     @apply bg-background text-foreground;
   }
 }
+@layer base {
+  h1 {
+    @apply text-xl sm:text-3xl;
+  }
+  h2 {
+    @apply text-lg sm:text-2xl;
+  }
+  h3 {
+    @apply text-base sm:text-xl;
+  }
+  p {
+    @apply text-sm sm:text-base leading-relaxed;
+  }
+}

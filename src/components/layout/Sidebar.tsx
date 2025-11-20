@@ -50,7 +50,8 @@ export function Sidebar({
       restricted: !isPartner,
       tooltip: "coming soon",
     },
-    
+        
+    { name: "Learn", href: "/dashboard/tutor", icon: User, restricted: false },
     { name: "Subscription", href: "/dashboard/subscription", icon: User, restricted: false },
 
     { name: "Settings", href: "/dashboard/settings", icon: Settings, restricted: false },
