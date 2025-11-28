@@ -35,7 +35,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Providers } from "@/components/providers/providers";
-
+import { Analytics } from "@vercel/analytics/next"
 export const metadata: Metadata = {
   title: "Nayo",
   description:
@@ -53,7 +53,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <Providers>{children}</Providers>
+        <Providers>{children}
+        <Analytics />
+        </Providers>
       </body>
     </html>
   );
