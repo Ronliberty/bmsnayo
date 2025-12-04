@@ -41,7 +41,7 @@ export default function AvailablePartnerships() {
 
     const fetchPartnerships = async () => {
       try {
-        const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/partner/partnerships/`, {
+        const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/partnership/partnerships/`, {
           headers: { Authorization: `Bearer ${access}` },
         });
         setPartnerships(data);
@@ -63,7 +63,7 @@ export default function AvailablePartnerships() {
 
     try {
       const { data } = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/partner/partnerships/${partnershipId}/questions/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/partnership/partnership-questions/${partnershipId}/`,
         { headers: { Authorization: `Bearer ${access}` } }
       );
       setQuestions(data);

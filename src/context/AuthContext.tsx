@@ -86,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ------------------ LOGOUT ------------------
   async function logout() {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout/`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/logout/`, {
       method: "POST",
       credentials: "include", // clear cookie
     });

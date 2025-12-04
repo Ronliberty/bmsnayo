@@ -3,7 +3,7 @@ import axios from "axios";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function getAccount(access: string) {
-  const res = await axios.get(`${API_URL}/api/auth/account/`, {
+  const res = await axios.get(`${API_URL}/api/user/me/`, {
     headers: {
       Authorization: `Bearer ${access}`,
     },
@@ -21,7 +21,7 @@ export async function updateAccount(access: string, data: { email?: string; phon
 }
 
 export async function changePassword(access: string, data: { oldPassword: string; newPassword: string }) {
-  const res = await axios.post(`${API_URL}/api/auth/change-password/`, data, {
+  const res = await axios.post(`${API_URL}/api/pass/change/`, data, {
     headers: {
       Authorization: `Bearer ${access}`,
     },
