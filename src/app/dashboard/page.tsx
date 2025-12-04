@@ -42,7 +42,7 @@ export default function DashboardPage() {
       setErr(null);
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/articles/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/nayo/articles/`,
           {
             headers: {
               "Content-Type": "application/json",

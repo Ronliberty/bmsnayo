@@ -44,7 +44,7 @@ export default function ProfilePage() {
       if (!access) return;
       try {
         const { data } = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/profile/freelancer/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/nayo/profile/freelancer/`,
           { headers: { Authorization: `Bearer ${access}` } }
         );
         setProfile(data);
@@ -73,7 +73,7 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       const { data } = await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/profile/freelancer/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/nayo/profile/freelancer/`,
         {
           bio,
           hourly_rate: hourlyRate,

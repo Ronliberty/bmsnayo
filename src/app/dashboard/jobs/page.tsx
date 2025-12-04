@@ -47,7 +47,7 @@ export default function Jobs() {
     async function fetchJobs() {
       if (!access) return;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jobs/`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/nayo/jobs/`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${access}`,
