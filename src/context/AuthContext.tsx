@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ------------------ REGISTER ------------------
   async function register(payload: any) {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register/`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/signup/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
