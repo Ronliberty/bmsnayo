@@ -31,7 +31,7 @@ export default function SubscriptionPage() {
     async function fetchPlans() {
       if (!access) return;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/plans/`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/finance/plans/`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${access}`,
