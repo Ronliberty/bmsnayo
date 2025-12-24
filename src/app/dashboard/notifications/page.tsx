@@ -15,7 +15,7 @@ export default function BuyerNotificationsPage() {
       if (!access) return;
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/notify/notifications/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/notify/notifications/`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -39,7 +39,7 @@ export default function BuyerNotificationsPage() {
     if (!access) return;
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/notify/notifications/${id}/mark_read/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/notify/notifications/${id}/mark_read/`,
         {
           method: "PATCH",
           headers: {
@@ -61,7 +61,7 @@ export default function BuyerNotificationsPage() {
     if (!access) return;
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/notify/notifications/${id}/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/notify/notifications/${id}/`,
         {
           method: "DELETE",
           headers: {
