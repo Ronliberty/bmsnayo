@@ -2,15 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { Globe } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 type Article = {
@@ -18,7 +9,12 @@ type Article = {
   title: string;
   url: string;
   summary: string;
-  source: string;
+  source: {
+    id: number;
+    name: string;
+    url: string;
+    reliability_score: number;
+  };
   source_reliability_at_fetch: number;
   topics: string[];
   language: string;
@@ -29,23 +25,25 @@ type Article = {
 
 export default function DashboardPage() {
   const { access } = useAuth();
+
   const [articles, setArticles] = useState<Article[]>([]);
   const [region, setRegion] = useState("all");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<{ [id: string]: boolean }>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     async function fetchArticles() {
       if (!access) return;
+
       setLoading(true);
       setErr(null);
+
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/nayo/articles/`,
           {
             headers: {
-              "Content-Type": "application/json",
               Authorization: `Bearer ${access}`,
             },
           }
@@ -57,7 +55,9 @@ export default function DashboardPage() {
         }
 
         const data = await res.json();
-        setArticles(data);
+
+        // ✅ DRF pagination-safe
+        setArticles(Array.isArray(data.results) ? data.results : []);
       } catch (e: any) {
         setErr(e.message);
       } finally {
@@ -68,6 +68,7 @@ export default function DashboardPage() {
     fetchArticles();
   }, [access]);
 
+  // ✅ SAFE: articles is always an array
   const featured = articles.find((a) => a.is_featured);
   const filteredArticles = articles.filter(
     (a) => region === "all" || a.region === region
@@ -79,7 +80,10 @@ export default function DashboardPage() {
 
   function getPreview(text: string, wordLimit = 100) {
     const words = text.split(/\s+/);
-    if (words.length <= wordLimit) return { preview: text, remaining: "" };
+    if (words.length <= wordLimit) {
+      return { preview: text, remaining: "" };
+    }
+
     return {
       preview: words.slice(0, wordLimit).join(" "),
       remaining: words.slice(wordLimit).join(" "),
@@ -87,8 +91,7 @@ export default function DashboardPage() {
   }
 
   function formatDate(dateString: string) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -103,11 +106,11 @@ export default function DashboardPage() {
         Stay updated on AI, jobs, and market opportunities.
       </p>
 
-      {/* Show errors / loading */}
+      {/* Loading / Error */}
       {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
       {err && <p className="text-sm text-red-600">{err}</p>}
 
-      {/* Featured Article */}
+      {/* Featured */}
       {featured && (
         <Card className="border-2 border-primary">
           <CardHeader>
@@ -116,13 +119,13 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-2 leading-relaxed tracking-wide">
+            <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
               {featured.summary}
             </p>
             <a
               href={featured.url}
-              className="text-primary text-sm font-medium hover:underline"
               target="_blank"
+              className="text-primary text-sm font-medium hover:underline"
             >
               Read more →
             </a>
@@ -130,13 +133,10 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Filters */}
-     
-
-      {/* News List */}
+      {/* Articles */}
       <div className="space-y-4">
         {filteredArticles.map((article) => {
-          const { preview, remaining } = getPreview(article.summary, 100);
+          const { preview, remaining } = getPreview(article.summary);
           const isExpanded = expanded[article.id];
 
           return (
@@ -146,26 +146,22 @@ export default function DashboardPage() {
                   {article.title}
                 </CardTitle>
               </CardHeader>
+
               <CardContent>
-                {/* Summary with toggle */}
-                <p className="text-sm text-muted-foreground mb-2 leading-relaxed tracking-wide">
+                <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
                   {preview}
                   {!isExpanded && remaining && "..."}
-                  {isExpanded && remaining && (
-                    <span className="inline"> {remaining}</span>
-                  )}
+                  {isExpanded && remaining && <span> {remaining}</span>}
                 </p>
 
-                {/* Meta info */}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
-                    {article.source} • Reliability:{" "}
+                    {article.source.name} • Reliability{" "}
                     {article.source_reliability_at_fetch}%
                   </span>
                   <span>{formatDate(article.published_at)}</span>
                 </div>
 
-                {/* Buttons */}
                 {!isExpanded && remaining && (
                   <button
                     onClick={() => toggleExpand(article.id)}
@@ -176,7 +172,7 @@ export default function DashboardPage() {
                 )}
 
                 {isExpanded && (
-                  <div className="flex items-center gap-4 mt-2">
+                  <div className="flex gap-4 mt-2">
                     <button
                       onClick={() => toggleExpand(article.id)}
                       className="text-primary text-sm font-medium hover:underline"
@@ -185,8 +181,8 @@ export default function DashboardPage() {
                     </button>
                     <a
                       href={article.url}
-                      className="text-primary text-sm font-medium hover:underline"
                       target="_blank"
+                      className="text-primary text-sm font-medium hover:underline"
                     >
                       Explore →
                     </a>

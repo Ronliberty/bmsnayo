@@ -11,35 +11,35 @@ export function Navbar() {
   const [search, setSearch] = useState("");
   const { user } = useAuth();
 
-  // 🔕 Notifications temporarily disabled
-  // const [hasUnread, setHasUnread] = useState(false);
 
-  // useEffect(() => {
-  //   const fetchNotifications = async () => {
-  //     if (!user) return;
-  //
-  //     try {
-  //       const res = await fetch(
-  //         `${process.env.NEXT_PUBLIC_API_URL}/api/notify/notifications/`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${localStorage.getItem("access")}`,
-  //           },
-  //         }
-  //       );
-  //
-  //       if (!res.ok) throw new Error("Failed to fetch notifications");
-  //       const data = await res.json();
-  //
-  //       const unread = data.some((n: any) => !n.is_read);
-  //       setHasUnread(unread);
-  //     } catch (err) {
-  //       console.error("Error fetching notifications:", err);
-  //     }
-  //   };
-  //
-  //   fetchNotifications();
-  // }, [user]);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user) return;
+  
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/notify/notifications/`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("access")}`,
+            },
+          }
+        );
+  
+        if (!res.ok) throw new Error("Failed to fetch notifications");
+        const data = await res.json();
+  
+        const unread = data.some((n: any) => !n.is_read);
+        setHasUnread(unread);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      }
+    };
+  
+    fetchNotifications();
+  }, [user]);
 
   // Helper to get profile initial
   const getInitial = () => {
@@ -77,7 +77,7 @@ export function Navbar() {
         </button>
 
         {/* 🔕 Notifications disabled */}
-        {/*
+        
         <Link
           href="/dashboard/notifications"
           className="relative p-2 rounded-full hover:bg-muted"
@@ -87,7 +87,7 @@ export function Navbar() {
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           )}
         </Link>
-        */}
+       
 
         {/* Profile */}
         <Link href="/dashboard/profile">
