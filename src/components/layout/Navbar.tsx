@@ -4,39 +4,42 @@ import { Bell, Search, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext"; // ✅ user info
+import { useAuth } from "@/context/AuthContext";
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [search, setSearch] = useState("");
-  const { user } = useAuth(); 
-  const [hasUnread, setHasUnread] = useState(false);
+  const { user } = useAuth();
 
-  // Fetch unread notifications
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!user) return;
+  // 🔕 Notifications temporarily disabled
+  // const [hasUnread, setHasUnread] = useState(false);
 
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notify/notifications/`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access")}`,
-          },
-        });
-
-        if (!res.ok) throw new Error("Failed to fetch notifications");
-        const data = await res.json();
-
-        // Check if there is any unread notification
-        const unread = data.some((n: any) => !n.is_read);
-        setHasUnread(unread);
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-      }
-    };
-
-    fetchNotifications();
-  }, [user]);
+  // useEffect(() => {
+  //   const fetchNotifications = async () => {
+  //     if (!user) return;
+  //
+  //     try {
+  //       const res = await fetch(
+  //         `${process.env.NEXT_PUBLIC_API_URL}/api/notify/notifications/`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${localStorage.getItem("access")}`,
+  //           },
+  //         }
+  //       );
+  //
+  //       if (!res.ok) throw new Error("Failed to fetch notifications");
+  //       const data = await res.json();
+  //
+  //       const unread = data.some((n: any) => !n.is_read);
+  //       setHasUnread(unread);
+  //     } catch (err) {
+  //       console.error("Error fetching notifications:", err);
+  //     }
+  //   };
+  //
+  //   fetchNotifications();
+  // }, [user]);
 
   // Helper to get profile initial
   const getInitial = () => {
@@ -66,16 +69,25 @@ export function Navbar() {
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}
           className="p-2 rounded-full hover:bg-muted"
         >
-          {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          {theme === "light" ? (
+            <Moon className="h-5 w-5" />
+          ) : (
+            <Sun className="h-5 w-5" />
+          )}
         </button>
 
-        {/* Notifications */}
-        <Link href="/dashboard/notifications" className="relative p-2 rounded-full hover:bg-muted">
+        {/* 🔕 Notifications disabled */}
+        {/*
+        <Link
+          href="/dashboard/notifications"
+          className="relative p-2 rounded-full hover:bg-muted"
+        >
           <Bell className="h-5 w-5" />
           {hasUnread && (
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           )}
         </Link>
+        */}
 
         {/* Profile */}
         <Link href="/dashboard/profile">
