@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -18,7 +17,12 @@ import {
 } from "@/components/ui/dialog";
 import { Maximize2, Minimize2, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
 type Job = {
   id: string;
@@ -31,34 +35,44 @@ type Job = {
   salary_max: number;
   posted_at: string;
   url: string;
-  video_url?: string | null; // ✅ now supports video link
+  video_url?: string | null;
 };
 
-export default function Jobs() {
+export default function JobsPage() {
   const { access } = useAuth();
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [openJob, setOpenJob] = useState<Job | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Fetch jobs
   useEffect(() => {
     async function fetchJobs() {
       if (!access) return;
+
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/nayo/jobs/`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${access}`,
-          },
-        });
+        setLoading(true);
+        setErr(null);
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/nayo/jobs/`,
+          {
+            headers: {
+              Authorization: `Bearer ${access}`,
+            },
+          }
+        );
+
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.detail || "Failed to fetch jobs");
         }
+
         const data = await res.json();
-        setJobs(data);
+
+        // ✅ DRF pagination-safe
+        setJobs(Array.isArray(data.results) ? data.results : []);
       } catch (error: any) {
         console.error("Error fetching jobs:", error);
         setErr(error.message);
@@ -66,6 +80,7 @@ export default function Jobs() {
         setLoading(false);
       }
     }
+
     fetchJobs();
   }, [access]);
 
@@ -77,92 +92,101 @@ export default function Jobs() {
           Explore the latest openings and apply directly.
         </p>
 
-        {loading && <p className="text-sm text-muted-foreground">Loading jobs....</p>}
+        {loading && (
+          <p className="text-sm text-muted-foreground">Loading jobs…</p>
+        )}
         {err && <p className="text-sm text-red-600">{err}</p>}
 
+        {!loading && !err && jobs.length === 0 && (
+          <p className="text-muted-foreground">No jobs found.</p>
+        )}
+
         <div className="space-y-4">
-          {!loading && !err && (
-            jobs.length === 0 ? (
-              <p className="text-muted-foreground">No jobs found.</p>
-            ) : (
-              jobs.map((job) => (
-                <Card key={job.id} className="shadow-md hover:shadow-lg transition">
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">
-                      {job.title}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {job.company} — {job.location}
-                    </p>
-                  </CardHeader>
+          {jobs.map((job) => (
+            <Card key={job.id} className="shadow-md hover:shadow-lg transition">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">
+                  {job.title}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {job.company} — {job.location}
+                </p>
+              </CardHeader>
 
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {job.description}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>
-                        {job.currency} {job.salary_min?.toLocaleString()} -{" "}
-                        {job.salary_max?.toLocaleString()}
-                      </span>
-                      <span>Posted: {job.posted_at}</span>
-                    </div>
-                  </CardContent>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {job.description}
+                </p>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    {job.currency}{" "}
+                    {job.salary_min?.toLocaleString()} –{" "}
+                    {job.salary_max?.toLocaleString()}
+                  </span>
+                  <span>
+                    Posted:{" "}
+                    {new Date(job.posted_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </CardContent>
 
-                  <CardFooter className="flex justify-between gap-2">
-                    <Button asChild className="flex-1">
-                      <a href={job.url} target="_blank" rel="noopener noreferrer">
-                        Apply Now
-                      </a>
-                    </Button>
+              <CardFooter className="flex justify-between gap-2">
+                <Button asChild className="flex-1">
+                  <a
+                    href={job.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Apply Now
+                  </a>
+                </Button>
 
-                    {/* ✅ Conditional How to Apply button */}
-                    {job.video_url ? (
+                {job.video_url ? (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setOpenJob(job);
+                      setIsExpanded(false);
+                    }}
+                  >
+                    How to Apply
+                  </Button>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Button
                         variant="outline"
-                        className="flex-1"
-                        onClick={() => {
-                          setOpenJob(job);
-                          setIsExpanded(false);
-                        }}
+                        disabled
+                        className="flex-1 flex items-center gap-2 opacity-70 cursor-not-allowed"
                       >
-                        How to Apply
+                        <Lock className="w-4 h-4" />
+                        No video
                       </Button>
-                    ) : (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            disabled
-                            className="flex-1 flex items-center justify-center gap-2 opacity-70 cursor-not-allowed"
-                          >
-                            <Lock className="w-4 h-4" />
-                            No video
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>No video available yet</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </CardFooter>
-                </Card>
-              ))
-            )
-          )}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>No video available yet</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </CardFooter>
+            </Card>
+          ))}
         </div>
 
         {/* Video Modal */}
         {openJob && openJob.video_url && (
-          <Dialog open={!!openJob} onOpenChange={() => setOpenJob(null)}>
+          <Dialog open onOpenChange={() => setOpenJob(null)}>
             <DialogContent
-              className={`transition-all duration-500 ease-in-out ${
+              className={`transition-all duration-500 ${
                 isExpanded ? "max-w-[95vw] h-[90vh]" : "max-w-2xl"
               }`}
             >
               <DialogHeader>
                 <div className="flex justify-between items-center">
-                  <DialogTitle>How to Apply for {openJob.title}</DialogTitle>
+                  <DialogTitle>
+                    How to Apply for {openJob.title}
+                  </DialogTitle>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -174,18 +198,17 @@ export default function Jobs() {
               </DialogHeader>
 
               <div
-                className={`w-full bg-black transition-all duration-500 ease-in-out rounded-xl overflow-hidden ${
+                className={`w-full bg-black rounded-xl overflow-hidden ${
                   isExpanded ? "h-[75vh]" : "aspect-video"
                 }`}
               >
                 <iframe
                   className="w-full h-full"
-                  src={openJob.video_url!}
+                  src={openJob.video_url}
                   title={`How to Apply for ${openJob.title}`}
-                  frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                ></iframe>
+                />
               </div>
             </DialogContent>
           </Dialog>

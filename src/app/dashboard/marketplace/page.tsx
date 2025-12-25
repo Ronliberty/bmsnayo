@@ -234,12 +234,16 @@
 //   );
 // }
 
-
-
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { ShoppingCart, Heart } from "lucide-react";
@@ -247,7 +251,13 @@ import { useRouter } from "next/navigation";
 import { useAccountBalance } from "@/app/hooks/useAccountBalance";
 import { OrdersCart } from "@/components/marketplace/OrdersCart";
 
-type Media = { id: string; media_type: string; file?: string; link?: string };
+type Media = {
+  id: string;
+  media_type: string;
+  file?: string;
+  link?: string;
+};
+
 type MarketplaceItem = {
   id: string;
   title: string;
@@ -272,86 +282,143 @@ export default function MarketplacePage() {
   const [err, setErr] = useState<string | null>(null);
   const [wishlistItems, setWishlistItems] = useState<number[]>([]);
   const [userOrders, setUserOrders] = useState<number[]>([]);
-  const [actionLoading, setActionLoading] = useState<{ [k: string]: boolean }>({});
-  const [showDepositModal, setShowDepositModal] = useState<{ visible: boolean; item?: MarketplaceItem }>({ visible: false });
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [showDepositModal, setShowDepositModal] = useState<{
+    visible: boolean;
+    item?: MarketplaceItem;
+  }>({ visible: false });
 
-  // Fetch marketplace items
+  /* =======================
+     Fetch marketplace items
+     ======================= */
   useEffect(() => {
     if (!access) return;
+
     async function fetchItems() {
       try {
-        const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/market/items/`, {
-          headers: { Authorization: `Bearer ${access}` },
-        });
+        setLoading(true);
+        setErr(null);
+
+        const r = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/market/items/`,
+          {
+            headers: { Authorization: `Bearer ${access}` },
+          }
+        );
+
         if (!r.ok) throw new Error("Failed to load items");
-        setItems(await r.json());
+
+        const data = await r.json();
+
+        // ✅ DRF pagination-safe
+        setItems(Array.isArray(data.results) ? data.results : []);
       } catch (e: any) {
         setErr(e.message);
       } finally {
         setLoading(false);
       }
     }
+
     fetchItems();
   }, [access]);
 
-  // Fetch user orders
+  /* =======================
+     Fetch user orders
+     ======================= */
   useEffect(() => {
     if (!access) return;
+
     async function fetchOrders() {
       try {
-        const ordersRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/market/orders/`, {
-          headers: { Authorization: `Bearer ${access}` },
-        });
-        if (!ordersRes.ok) return;
-        const orders = await ordersRes.json();
-        const active = orders.filter((o: any) => o.status !== "completed" && o.status !== "cancelled");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/market/orders/`,
+          { headers: { Authorization: `Bearer ${access}` } }
+        );
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const orders = Array.isArray(data.results)
+          ? data.results
+          : data;
+
+        const active = orders.filter(
+          (o: any) =>
+            o.status !== "completed" && o.status !== "cancelled"
+        );
+
         setUserOrders(active.map((o: any) => o.item.id));
       } catch (e) {
         console.error(e);
       }
     }
+
     fetchOrders();
   }, [access]);
 
-  // Fetch wishlist items
+  /* =======================
+     Fetch wishlist
+     ======================= */
   useEffect(() => {
     if (!access) return;
+
     async function fetchWishlist() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/market/wishlist/`, {
-          headers: { Authorization: `Bearer ${access}` },
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/market/wishlist/`,
+          { headers: { Authorization: `Bearer ${access}` } }
+        );
+
         if (!res.ok) return;
-        const wishlist = await res.json();
+
+        const data = await res.json();
+        const wishlist = Array.isArray(data.results)
+          ? data.results
+          : data;
+
         setWishlistItems(wishlist.map((w: any) => w.item.id));
       } catch (e) {
         console.error(e);
       }
     }
+
     fetchWishlist();
   }, [access]);
 
   async function handleWishlist(itemId: string, sellerId: number) {
     if (!access || sellerId === user?.id) return;
+
     try {
-      setActionLoading(s => ({ ...s, [itemId]: true }));
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/market/wishlist/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${access}` },
-        body: JSON.stringify({ item_id: itemId }),
-      });
+      setActionLoading((s) => ({ ...s, [itemId]: true }));
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/market/wishlist/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${access}`,
+          },
+          body: JSON.stringify({ item_id: itemId }),
+        }
+      );
+
       if (!res.ok) throw new Error("Failed to add wishlist");
-      setWishlistItems(prev => [...prev, Number(itemId)]);
+
+      setWishlistItems((prev) => [...prev, Number(itemId)]);
       router.push("/dashboard/marketplace/wishlist");
     } catch (e) {
       console.error(e);
     } finally {
-      setActionLoading(s => ({ ...s, [itemId]: false }));
+      setActionLoading((s) => ({ ...s, [itemId]: false }));
     }
   }
 
   async function handleBuy(item: MarketplaceItem) {
     if (!access) return;
+
     const price = Number(item.price);
     const currentBalance = account ? Number(account.balance) : 0;
 
@@ -361,306 +428,119 @@ export default function MarketplacePage() {
     }
 
     try {
-      setActionLoading(s => ({ ...s, [item.id]: true }));
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/market/orders/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${access}` },
-        body: JSON.stringify({ item_id: item.id }),
-      });
+      setActionLoading((s) => ({ ...s, [item.id]: true }));
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/market/orders/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${access}`,
+          },
+          body: JSON.stringify({ item_id: item.id }),
+        }
+      );
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to place order");
+      if (!res.ok) throw new Error(data.detail);
+
       router.push(`/dashboard/marketplace/orders/${data.id}`);
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
     } finally {
-      setActionLoading(s => ({ ...s, [item.id]: false }));
+      setActionLoading((s) => ({ ...s, [item.id]: false }));
       refreshAccount();
     }
   }
 
+  /* =======================
+     UI
+     ======================= */
   return (
-    // <div className="p-6 space-y-6">
-    //   {/* Header with Wishlist + Orders */}
-    //   <div className="flex items-center justify-between mb-4">
-    //     <h2 className="text-2xl font-bold">Marketplace</h2>
-
-    //     <div className="flex items-center gap-3">
-    //       {/* Wishlist Button with badge */}
-    //       <div className="relative">
-    //         <Button
-    //           variant="outline"
-    //           className="flex items-center gap-1 hover:bg-red-50 dark:hover:bg-red-900/20"
-    //           onClick={() => router.push("/dashboard/marketplace/wishlist")}
-    //         >
-    //           <Heart className="w-4 h-4 text-red-500" />
-    //           <span>Wishlist</span>
-    //         </Button>
-    //         {wishlistItems.length > 0 && (
-    //           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-    //             {wishlistItems.length}
-    //           </span>
-    //         )}
-    //       </div>
-
-    //       {/* Orders Cart */}
-    //       <OrdersCart count={userOrders.length} />
-    //     </div>
-    //   </div>
-
-    //   {loading && <p>Loading items...</p>}
-    //   {err && <p className="text-red-600">{err}</p>}
-
-    //   <div className="grid md:grid-cols-2 gap-4">
-    //     {items.map(item => {
-    //       const isOwner = user?.id === item.seller;
-    //       const soldOut = item.item_type !== "service" && item.availability_quantity <= 0;
-
-    //       return (
-    //         <Card key={item.id}>
-    //           <CardHeader>
-    //             <CardTitle>{item.title}</CardTitle>
-    //             <p className="text-xs text-muted-foreground">{item.seller_name}</p>
-    //           </CardHeader>
-
-    //           <CardContent className="space-y-2">
-    //             {item.media && item.media.length > 0 ? (
-    //               <img
-    //                 src={item.media[0].file || item.media[0].link}
-    //                 alt={item.title}
-    //                 className="w-full h-40 object-cover rounded"
-    //                 onError={e => (e.currentTarget.src = "/placeholder.png")}
-    //               />
-    //             ) : (
-    //               <div className="h-40 bg-muted rounded flex items-center justify-center text-sm">
-    //                 No preview
-    //               </div>
-    //             )}
-    //             <p className="text-sm">{item.description}</p>
-    //             <p className="mt-2 font-semibold">
-    //               {new Intl.NumberFormat("en-US", { style: "currency", currency: item.currency }).format(Number(item.price))}
-    //             </p>
-    //             <p className="text-xs text-muted-foreground">Delivery: {item.delivery_type ?? "manual"}</p>
-    //             {soldOut && <p className="text-red-600 font-semibold text-sm">Sold Out</p>}
-    //           </CardContent>
-
-    //           <CardFooter className="flex gap-2">
-    //             {isOwner ? (
-    //               <p className="text-sm text-muted-foreground italic">This is your item</p>
-    //             ) : (
-    //               <>
-    //                 <Button
-    //                   variant="outline"
-    //                   onClick={() => handleWishlist(item.id, item.seller)}
-    //                   disabled={wishlistItems.includes(Number(item.id)) || actionLoading[item.id]}
-    //                 >
-    //                   <Heart className="w-4 h-4 mr-1" />
-    //                   {wishlistItems.includes(Number(item.id)) ? "Added" : "Wishlist"}
-    //                 </Button>
-
-    //                 <Button
-    //                   onClick={() => handleBuy(item)}
-    //                   disabled={soldOut || actionLoading[item.id]}
-    //                   className="bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-    //                 >
-    //                   <ShoppingCart className="w-4 h-4 mr-1" />
-    //                   {soldOut ? "Sold Out" : "Buy Now"}
-    //                 </Button>
-    //               </>
-    //             )}
-    //           </CardFooter>
-    //         </Card>
-    //       );
-    //     })}
-    //   </div>
-
-    //   {/* Deposit Modal */}
-    //   {showDepositModal.visible && (
-    //     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    //       <div className="bg-background dark:bg-card p-6 rounded-xl shadow-lg w-96 space-y-4 border border-border">
-    //         <h3 className="text-lg font-semibold text-foreground dark:text-card-foreground">
-    //           Insufficient Balance
-    //         </h3>
-    //         <p className="text-sm text-muted-foreground dark:text-muted-foreground">
-    //           Your account balance is not enough to buy this item. Would you like to deposit funds now?
-    //         </p>
-    //         <div className="flex justify-end gap-2">
-    //           <Button
-    //             variant="outline"
-    //             className="bg-background dark:bg-card dark:text-card-foreground"
-    //             onClick={() => setShowDepositModal({ visible: false })}
-    //           >
-    //             No
-    //           </Button>
-    //           <Button
-    //             className="bg-primary text-primary-foreground"
-    //             onClick={() => {
-    //               setShowDepositModal({ visible: false });
-    //               router.push("/dashboard/finance?tab=deposit");
-    //             }}
-    //           >
-    //             Yes
-    //           </Button>
-    //         </div>
-    //       </div>
-    //     </div>
-    //   )}
-    // </div>
-
-
-    <div className="px-3 sm:px-4 md:px-6 py-6 space-y-6">
-
-  {/* Header */}
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <h2 className="text-xl sm:text-2xl font-bold">Marketplace</h2>
-
-    <div className="flex items-center gap-3">
-      {/* Wishlist */}
-      <div className="relative">
-        <Button
-          variant="outline"
-          className="flex items-center gap-1 px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20"
-          onClick={() => router.push("/dashboard/marketplace/wishlist")}
-        >
-          <Heart className="w-4 h-4 text-red-500" />
-          <span>Wishlist</span>
-        </Button>
-
-        {wishlistItems.length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-            {wishlistItems.length}
-          </span>
-        )}
+    <div className="px-3 sm:px-6 py-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl sm:text-2xl font-bold">Marketplace</h2>
+        <OrdersCart count={userOrders.length} />
       </div>
 
-      {/* Orders Cart */}
-      <OrdersCart count={userOrders.length} />
-    </div>
-  </div>
+      {loading && <p className="text-sm">Loading items…</p>}
+      {err && <p className="text-sm text-red-600">{err}</p>}
 
-  {loading && <p className="text-sm">Loading items...</p>}
-  {err && <p className="text-red-600 text-sm">{err}</p>}
+      {!loading && !err && items.length === 0 && (
+        <p className="text-muted-foreground">No items available.</p>
+      )}
 
-  {/* Responsive Grid */}
-  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-    {items.map(item => {
-      const isOwner = user?.id === item.seller;
-      const soldOut = item.item_type !== "service" && item.availability_quantity <= 0;
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {items.map((item) => {
+          const isOwner = user?.id === item.seller;
+          const soldOut =
+            item.item_type !== "service" &&
+            item.availability_quantity <= 0;
 
-      return (
-        <Card key={item.id} className="w-full overflow-hidden">
-          
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-base sm:text-lg">{item.title}</CardTitle>
-            <p className="text-xs text-muted-foreground">{item.seller_name}</p>
-          </CardHeader>
+          return (
+            <Card key={item.id}>
+              <CardHeader>
+                <CardTitle>{item.title}</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  {item.seller_name}
+                </p>
+              </CardHeader>
 
-          <CardContent className="space-y-3">
+              <CardContent className="space-y-2">
+                <p className="text-sm line-clamp-3">
+                  {item.description}
+                </p>
 
-            {/* Media */}
-            {item.media && item.media.length > 0 ? (
-              <img
-                src={item.media[0].file || item.media[0].link}
-                alt={item.title}
-                className="w-full h-36 sm:h-40 object-cover rounded-md"
-                onError={e => (e.currentTarget.src = "/placeholder.png")}
-              />
-            ) : (
-              <div className="h-36 sm:h-40 bg-muted rounded flex items-center justify-center text-xs">
-                No preview
-              </div>
-            )}
+                <p className="font-semibold">
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: item.currency,
+                  }).format(Number(item.price))}
+                </p>
 
-            <p className="text-sm leading-relaxed line-clamp-3 sm:line-clamp-none">
-              {item.description}
-            </p>
+                {soldOut && (
+                  <p className="text-red-600 text-sm font-semibold">
+                    Sold Out
+                  </p>
+                )}
+              </CardContent>
 
-            <p className="font-semibold text-sm sm:text-base">
-              {new Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: item.currency,
-              }).format(Number(item.price))}
-            </p>
+              <CardFooter className="flex gap-2">
+                {isOwner ? (
+                  <p className="text-xs italic text-muted-foreground">
+                    This is your item
+                  </p>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        handleWishlist(item.id, item.seller)
+                      }
+                      disabled={
+                        wishlistItems.includes(Number(item.id)) ||
+                        actionLoading[item.id]
+                      }
+                    >
+                      <Heart className="w-4 h-4 mr-1" />
+                      Wishlist
+                    </Button>
 
-            <p className="text-xs text-muted-foreground">
-              Delivery: {item.delivery_type ?? "manual"}
-            </p>
-
-            {soldOut && (
-              <p className="text-red-600 font-semibold text-sm">Sold Out</p>
-            )}
-          </CardContent>
-
-          {/* Footer Buttons */}
-          <CardFooter className="flex flex-col sm:flex-row sm:items-center gap-2 mt-auto">
-
-            {isOwner ? (
-              <p className="text-sm text-muted-foreground italic">
-                This is your item
-              </p>
-            ) : (
-              <>
-                {/* Wishlist Button */}
-                <Button
-                  variant="outline"
-                  onClick={() => handleWishlist(item.id, item.seller)}
-                  disabled={wishlistItems.includes(Number(item.id)) || actionLoading[item.id]}
-                  className="w-full sm:w-auto text-sm"
-                >
-                  <Heart className="w-4 h-4 mr-1" />
-                  {wishlistItems.includes(Number(item.id)) ? "Added" : "Wishlist"}
-                </Button>
-
-                {/* Buy Button */}
-                <Button
-                  onClick={() => handleBuy(item)}
-                  disabled={soldOut || actionLoading[item.id]}
-                  className="w-full sm:w-auto bg-primary text-primary-foreground disabled:opacity-50 text-sm"
-                >
-                  <ShoppingCart className="w-4 h-4 mr-1" />
-                  {soldOut ? "Sold Out" : "Buy Now"}
-                </Button>
-              </>
-            )}
-
-          </CardFooter>
-        </Card>
-      );
-    })}
-  </div>
-
-  {/* Deposit Modal */}
-  {showDepositModal.visible && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 px-4">
-      <div className="bg-background dark:bg-card p-5 sm:p-6 rounded-xl shadow-lg w-full max-w-sm space-y-4 border border-border">
-        <h3 className="text-lg font-semibold">Insufficient Balance</h3>
-
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Your account balance is not enough to buy this item. Would you like to deposit funds now?
-        </p>
-
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto"
-            onClick={() => setShowDepositModal({ visible: false })}
-          >
-            No
-          </Button>
-
-          <Button
-            className="w-full sm:w-auto bg-primary text-primary-foreground"
-            onClick={() => {
-              setShowDepositModal({ visible: false });
-              router.push("/dashboard/finance?tab=deposit");
-            }}
-          >
-            Yes
-          </Button>
-        </div>
+                    <Button
+                      onClick={() => handleBuy(item)}
+                      disabled={soldOut || actionLoading[item.id]}
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-1" />
+                      Buy
+                    </Button>
+                  </>
+                )}
+              </CardFooter>
+            </Card>
+          );
+        })}
       </div>
     </div>
-  )}
-</div>
-
   );
 }

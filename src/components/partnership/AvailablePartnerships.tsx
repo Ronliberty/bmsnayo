@@ -26,25 +26,37 @@ interface Question {
 
 export default function AvailablePartnerships() {
   const { access } = useAuth();
+
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [activeApplicationId, setActiveApplicationId] = useState<number | null>(null);
+  const [activeApplicationId, setActiveApplicationId] =
+    useState<number | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<{ [key: number]: any }>({});
+  const [answers, setAnswers] = useState<Record<number, any>>({});
   const [appError, setAppError] = useState<string | null>(null);
   const [appSuccess, setAppSuccess] = useState(false);
   const [appLoading, setAppLoading] = useState(false);
 
+  /* ==========================
+     Fetch partnerships (FIXED)
+     ========================== */
   useEffect(() => {
     if (!access) return;
 
     const fetchPartnerships = async () => {
       try {
-        const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/partnership/partnerships/`, {
-          headers: { Authorization: `Bearer ${access}` },
-        });
-        setPartnerships(data);
+        setLoading(true);
+
+        const { data } = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/partnership/partnerships/`,
+          { headers: { Authorization: `Bearer ${access}` } }
+        );
+
+        // ✅ DRF pagination-safe
+        setPartnerships(
+          Array.isArray(data.results) ? data.results : []
+        );
       } catch (err) {
         console.error(err);
       } finally {
@@ -66,9 +78,11 @@ export default function AvailablePartnerships() {
         `${process.env.NEXT_PUBLIC_API_URL}/api/partnership/partnership-questions/${partnershipId}/`,
         { headers: { Authorization: `Bearer ${access}` } }
       );
-      setQuestions(data);
+
+      // questions is already a list
+      setQuestions(Array.isArray(data) ? data : []);
       setAnswers({});
-    } catch (err) {
+    } catch {
       setAppError("Failed to load questions.");
     } finally {
       setAppLoading(false);
@@ -77,8 +91,13 @@ export default function AvailablePartnerships() {
 
   const handleChangeAnswer = (q: Question, value: any) => {
     let formattedValue: any = value;
-    if (q.question_type === "boolean") formattedValue = value === "true" || value === true;
-    else if (q.question_type === "text" || q.question_type === "select") formattedValue = value || null;
+
+    if (q.question_type === "boolean") {
+      formattedValue = value === "true" || value === true;
+    } else {
+      formattedValue = value || null;
+    }
+
     setAnswers((prev) => ({ ...prev, [q.id]: formattedValue }));
   };
 
@@ -86,15 +105,14 @@ export default function AvailablePartnerships() {
     if (!access || activeApplicationId === null) return;
 
     for (const q of questions) {
-      if (q.required && (answers[q.id] === undefined || answers[q.id] === null)) {
-        setAppError(`Please answer the question: "${q.question_text}"`);
+      if (q.required && answers[q.id] == null) {
+        setAppError(`Please answer: "${q.question_text}"`);
         return;
       }
     }
 
     setAppLoading(true);
     setAppError(null);
-    setAppSuccess(false);
 
     try {
       await axios.post(
@@ -102,206 +120,142 @@ export default function AvailablePartnerships() {
         { answers },
         { headers: { Authorization: `Bearer ${access}` } }
       );
+
       setAppSuccess(true);
       setActiveApplicationId(null);
     } catch (err: any) {
-      setAppError(err.response?.data?.detail || "Failed to submit application.");
+      setAppError(
+        err.response?.data?.detail || "Failed to submit application."
+      );
     } finally {
       setAppLoading(false);
     }
   };
 
-  if (loading) return <p>Loading available partnerships...</p>;
+  if (loading) {
+    return <p>Loading available partnerships...</p>;
+  }
 
   return (
-    // <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    //   {partnerships.map((p) => (
-    //     <Card key={p.id} className="p-4 animate__animated animate__fadeIn">
-    //       <h3 className="font-semibold">{p.title}</h3>
-    //       <p className="text-sm text-muted-foreground">{p.description}</p>
-    //       <p className="text-xs text-muted-foreground mt-1">
-    //         Commission: {p.commission_type === "percentage" ? `${p.commission_value}%` : `$${p.commission_value}`}
-    //       </p>
-    //       {p.referral_enabled && (
-    //         <p className="text-xs text-muted-foreground">Referral Rate: {p.referral_commission_rate}%</p>
-    //       )}
-    //       <div className="mt-2">
-    //         <Button onClick={() => handleJoinClick(p.id)}>Join Program</Button>
-    //       </div>
-    //     </Card>
-    //   ))}
-
-    //   {/* Application Form */}
-    //   {activeApplicationId && (
-    //     <div className="mt-8 p-4 border rounded space-y-4 col-span-full">
-    //       <h2 className="text-xl font-bold">Application Questions</h2>
-    //       {appLoading && <p>Loading questions...</p>}
-    //       {appError && <p className="text-red-600">{appError}</p>}
-    //       {appSuccess && <p className="text-green-600">Application submitted successfully!</p>}
-
-    //       {!appLoading &&
-    //         questions.map((q) => (
-    //           <div key={q.id} className="flex flex-col">
-    //             <label className="font-medium">
-    //               {q.question_text} {q.required && "*"}
-    //             </label>
-
-    //             {q.question_type === "text" && (
-    //               <input
-    //                 type="text"
-    //                 className="border px-3 py-2 rounded"
-    //                 value={answers[q.id] || ""}
-    //                 onChange={(e) => handleChangeAnswer(q, e.target.value)}
-    //               />
-    //             )}
-
-    //             {q.question_type === "boolean" && (
-    //               <select
-    //                 className="border px-3 py-2 rounded"
-    //                 value={answers[q.id] === true ? "true" : answers[q.id] === false ? "false" : ""}
-    //                 onChange={(e) => handleChangeAnswer(q, e.target.value)}
-    //               >
-    //                 <option value="">Select</option>
-    //                 <option value="true">Yes</option>
-    //                 <option value="false">No</option>
-    //               </select>
-    //             )}
-
-    //             {q.question_type === "select" && (
-    //               <select
-    //                 className="border px-3 py-2 rounded"
-    //                 value={answers[q.id] || ""}
-    //                 onChange={(e) => handleChangeAnswer(q, e.target.value)}
-    //               >
-    //                 <option value="">Select</option>
-    //                 {q.options?.map((opt) => (
-    //                   <option key={opt} value={opt}>
-    //                     {opt}
-    //                   </option>
-    //                 ))}
-    //               </select>
-    //             )}
-    //           </div>
-    //         ))}
-
-    //       {questions.length > 0 && (
-    //         <Button onClick={handleSubmitApplication} disabled={appLoading}>
-    //           {appLoading ? "Submitting..." : "Submit Application"}
-    //         </Button>
-    //       )}
-    //     </div>
-    //   )}
-    // </div>
-
-
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  {partnerships.map((p) => (
-    <Card
-      key={p.id}
-      className="p-4 animate__animated animate__fadeIn flex flex-col space-y-2"
-    >
-      <h3 className="font-semibold text-lg">{p.title}</h3>
-
-      <p className="text-sm text-muted-foreground break-words">
-        {p.description}
-      </p>
-
-      <p className="text-xs text-muted-foreground mt-1">
-        Commission:{" "}
-        {p.commission_type === "percentage"
-          ? `${p.commission_value}%`
-          : `$${p.commission_value}`}
-      </p>
-
-      {p.referral_enabled && (
-        <p className="text-xs text-muted-foreground">
-          Referral Rate: {p.referral_commission_rate}%
+      {partnerships.length === 0 && (
+        <p className="text-muted-foreground col-span-full">
+          No partnerships available at the moment.
         </p>
       )}
 
-      <div className="mt-2">
-        <Button className="w-full sm:w-auto" onClick={() => handleJoinClick(p.id)}>
-          Join Program
-        </Button>
-      </div>
-    </Card>
-  ))}
-
-  {/* Application Form */}
-  {activeApplicationId && (
-    <div className="mt-6 p-4 border rounded space-y-4 col-span-full bg-card shadow-sm">
-      <h2 className="text-xl font-bold">Application Questions</h2>
-
-      {appLoading && <p>Loading questions...</p>}
-      {appError && <p className="text-red-600">{appError}</p>}
-      {appSuccess && <p className="text-green-600">Application submitted successfully!</p>}
-
-      {!appLoading &&
-        questions.map((q) => (
-          <div key={q.id} className="flex flex-col space-y-1">
-            <label className="font-medium text-sm">
-              {q.question_text} {q.required && "*"}
-            </label>
-
-            {/* Text Input */}
-            {q.question_type === "text" && (
-              <input
-                type="text"
-                className="border px-3 py-2 rounded text-sm w-full"
-                value={answers[q.id] || ""}
-                onChange={(e) => handleChangeAnswer(q, e.target.value)}
-              />
-            )}
-
-            {/* Boolean Select */}
-            {q.question_type === "boolean" && (
-              <select
-                className="border px-3 py-2 rounded text-sm w-full"
-                value={
-                  answers[q.id] === true
-                    ? "true"
-                    : answers[q.id] === false
-                    ? "false"
-                    : ""
-                }
-                onChange={(e) => handleChangeAnswer(q, e.target.value)}
-              >
-                <option value="">Select</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            )}
-
-            {/* Options Select */}
-            {q.question_type === "select" && (
-              <select
-                className="border px-3 py-2 rounded text-sm w-full"
-                value={answers[q.id] || ""}
-                onChange={(e) => handleChangeAnswer(q, e.target.value)}
-              >
-                <option value="">Select</option>
-                {q.options?.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        ))}
-
-      {questions.length > 0 && (
-        <Button
-          onClick={handleSubmitApplication}
-          disabled={appLoading}
-          className="w-full sm:w-auto"
+      {partnerships.map((p) => (
+        <Card
+          key={p.id}
+          className="p-4 flex flex-col space-y-2"
         >
-          {appLoading ? "Submitting..." : "Submit Application"}
-        </Button>
+          <h3 className="font-semibold text-lg">{p.title}</h3>
+
+          <p className="text-sm text-muted-foreground">
+            {p.description}
+          </p>
+
+          <p className="text-xs text-muted-foreground">
+            Commission:{" "}
+            {p.commission_type === "percentage"
+              ? `${p.commission_value}%`
+              : `$${p.commission_value}`}
+          </p>
+
+          {p.referral_enabled && (
+            <p className="text-xs text-muted-foreground">
+              Referral Rate: {p.referral_commission_rate}%
+            </p>
+          )}
+
+          <Button
+            className="mt-auto w-full sm:w-auto"
+            onClick={() => handleJoinClick(p.id)}
+          >
+            Join Program
+          </Button>
+        </Card>
+      ))}
+
+      {/* Application Form */}
+      {activeApplicationId && (
+        <div className="mt-6 p-4 border rounded col-span-full space-y-4">
+          <h2 className="text-xl font-bold">Application Questions</h2>
+
+          {appLoading && <p>Loading questions...</p>}
+          {appError && <p className="text-red-600">{appError}</p>}
+          {appSuccess && (
+            <p className="text-green-600">
+              Application submitted successfully!
+            </p>
+          )}
+
+          {!appLoading &&
+            questions.map((q) => (
+              <div key={q.id} className="space-y-1">
+                <label className="font-medium text-sm">
+                  {q.question_text} {q.required && "*"}
+                </label>
+
+                {q.question_type === "text" && (
+                  <input
+                    className="border px-3 py-2 rounded w-full"
+                    value={answers[q.id] || ""}
+                    onChange={(e) =>
+                      handleChangeAnswer(q, e.target.value)
+                    }
+                  />
+                )}
+
+                {q.question_type === "boolean" && (
+                  <select
+                    className="border px-3 py-2 rounded w-full"
+                    value={
+                      answers[q.id] === true
+                        ? "true"
+                        : answers[q.id] === false
+                        ? "false"
+                        : ""
+                    }
+                    onChange={(e) =>
+                      handleChangeAnswer(q, e.target.value)
+                    }
+                  >
+                    <option value="">Select</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                )}
+
+                {q.question_type === "select" && (
+                  <select
+                    className="border px-3 py-2 rounded w-full"
+                    value={answers[q.id] || ""}
+                    onChange={(e) =>
+                      handleChangeAnswer(q, e.target.value)
+                    }
+                  >
+                    <option value="">Select</option>
+                    {q.options?.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            ))}
+
+          {questions.length > 0 && (
+            <Button
+              onClick={handleSubmitApplication}
+              disabled={appLoading}
+            >
+              {appLoading ? "Submitting..." : "Submit Application"}
+            </Button>
+          )}
+        </div>
       )}
     </div>
-  )}
-</div>
-
   );
 }

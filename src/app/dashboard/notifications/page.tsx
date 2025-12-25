@@ -5,52 +5,73 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 
+type Notification = {
+  id: number;
+  title?: string;
+  message: string;
+  is_read: boolean;
+};
+
 export default function BuyerNotificationsPage() {
   const { access } = useAuth();
-  const [notifications, setNotifications] = useState<any[]>([]);
+
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchNotifications() {
       if (!access) return;
+
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/notify/notifications/`,
           {
             headers: {
-              "Content-Type": "application/json",
               Authorization: `Bearer ${access}`,
             },
           }
         );
-        if (!res.ok) throw new Error("Failed to fetch notifications");
+
+        if (!res.ok) return;
+
         const data = await res.json();
-        setNotifications(data);
+
+        // ✅ Handle paginated & non-paginated responses
+        const list: Notification[] = Array.isArray(data)
+          ? data
+          : data?.results ?? [];
+
+        setNotifications(list);
       } catch (error) {
         console.error("Error fetching notifications:", error);
       } finally {
         setLoading(false);
       }
     }
+
     fetchNotifications();
   }, [access]);
 
   const handleMarkRead = async (id: number) => {
     if (!access) return;
+
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/notify/notifications/${id}/mark_read/`,
         {
-          method: "PATCH",
+          method: "POST", // ✅ matches your DRF @action
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${access}`,
           },
         }
       );
-      if (!res.ok) throw new Error("Failed to mark as read");
+
+      if (!res.ok) return;
+
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+        prev.map((n) =>
+          n.id === id ? { ...n, is_read: true } : n
+        )
       );
     } catch (error) {
       console.error("Error marking notification as read:", error);
@@ -59,6 +80,7 @@ export default function BuyerNotificationsPage() {
 
   const handleDelete = async (id: number) => {
     if (!access) return;
+
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/notify/notifications/${id}/`,
@@ -69,8 +91,12 @@ export default function BuyerNotificationsPage() {
           },
         }
       );
-      if (!res.ok) throw new Error("Failed to delete notification");
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
+
+      if (!res.ok) return;
+
+      setNotifications((prev) =>
+        prev.filter((n) => n.id !== id)
+      );
     } catch (error) {
       console.error("Error deleting notification:", error);
     }
@@ -79,30 +105,43 @@ export default function BuyerNotificationsPage() {
   return (
     <div className="p-6 space-y-4">
       <h2 className="text-2xl font-bold">My Notifications</h2>
+
       {loading && <p>Loading...</p>}
-      {notifications.length === 0 && !loading && <p>No notifications found.</p>}
+
+      {!loading && notifications.length === 0 && (
+        <p className="text-muted-foreground">
+          No notifications found.
+        </p>
+      )}
 
       {notifications.map((n) => (
         <Card key={n.id}>
           <CardHeader>
-            <CardTitle>
-              {n.title || "Notification"}{" "}
+            <CardTitle className="flex items-center gap-2">
+              {n.title || "Notification"}
               {!n.is_read && (
-                <span className="ml-2 px-2 py-1 text-xs bg-red-500 text-white rounded-full">
+                <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
                   New
                 </span>
               )}
             </CardTitle>
           </CardHeader>
+
           <CardContent>
-            <p>{n.message}</p>
-            <div className="flex gap-2 mt-2">
+            <p className="text-sm">{n.message}</p>
+
+            <div className="flex gap-2 mt-3">
               {!n.is_read && (
-                <Button onClick={() => handleMarkRead(n.id)}>
+                <Button
+                  size="sm"
+                  onClick={() => handleMarkRead(n.id)}
+                >
                   Mark as Read
                 </Button>
               )}
+
               <Button
+                size="sm"
                 variant="destructive"
                 onClick={() => handleDelete(n.id)}
               >
@@ -115,4 +154,3 @@ export default function BuyerNotificationsPage() {
     </div>
   );
 }
-
