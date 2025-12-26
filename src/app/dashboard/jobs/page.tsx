@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Card,
   CardHeader,
@@ -15,12 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Maximize2,
-  Minimize2,
-  Filter,
-  X,
-} from "lucide-react";
+import { Maximize2, Minimize2, Filter, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -46,6 +41,8 @@ type Job = {
   currency: string;
   salary_min: number;
   salary_max: number;
+  job_type: "Full-time" | "Part-time" | "Contract";
+  work_mode: "Remote" | "Office" | "Hybrid";
   posted_at: string;
   url: string;
   media?: Media[];
@@ -91,12 +88,7 @@ function RenderModalMedia({
 
   return (
     <div className="p-6 text-center">
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline text-sm"
-      >
+      <a href={url} target="_blank" className="underline text-sm">
         Download attachment
       </a>
     </div>
@@ -104,10 +96,22 @@ function RenderModalMedia({
 }
 
 /* ---------------- Filter Panel ---------------- */
-function FilterPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+function FilterPanel({
+  open,
+  onClose,
+  filters,
+  setFilters,
+  locations,
+}: any) {
+  const salaryRanges = [
+    { label: "Any", min: 0 },
+    { label: "Below 50k", min: 1, max: 50000 },
+    { label: "50k – 100k", min: 50000, max: 100000 },
+    { label: "100k+", min: 100000 },
+  ];
+
   return (
     <>
-      {/* Mobile Overlay */}
       {open && (
         <div
           className="fixed inset-0 bg-black/40 z-40 md:hidden"
@@ -120,7 +124,7 @@ function FilterPanel({ open, onClose }: { open: boolean; onClose: () => void }) 
         transform transition-transform duration-300
         ${open ? "translate-x-0" : "translate-x-full"}`}
       >
-        <div className="p-4 border-b flex items-center justify-between">
+        <div className="p-4 border-b flex justify-between items-center">
           <h3 className="font-semibold">Filters</h3>
           <Button size="icon" variant="ghost" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -128,51 +132,100 @@ function FilterPanel({ open, onClose }: { open: boolean; onClose: () => void }) 
         </div>
 
         <div className="p-4 space-y-6 text-sm">
-          {/* Category */}
-          <div>
-            <p className="font-medium mb-2">Category</p>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" /> Remote
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" /> Office
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" /> Hybrid
-              </label>
-            </div>
-          </div>
-
           {/* Location */}
           <div>
             <p className="font-medium mb-2">Location</p>
-            <select className="w-full border rounded-md p-2">
-              <option>Any</option>
-              <option>Nairobi</option>
-              <option>Mombasa</option>
-              <option>Remote</option>
+            <select
+              className="w-full border rounded-md p-2"
+              value={filters.location}
+              onChange={(e) =>
+                setFilters((f: any) => ({ ...f, location: e.target.value }))
+              }
+            >
+              <option value="all">All</option>
+              {locations.map((loc: string) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* Type */}
+          {/* Work Mode */}
           <div>
-            <p className="font-medium mb-2">Job Type</p>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" /> Full-time
+            <p className="font-medium mb-2">Work Mode</p>
+            {["Remote", "Office", "Hybrid"].map((mode) => (
+              <label key={mode} className="flex gap-2">
+                <input
+                  type="checkbox"
+                  checked={filters.workMode.includes(mode)}
+                  onChange={() =>
+                    setFilters((f: any) => ({
+                      ...f,
+                      workMode: f.workMode.includes(mode)
+                        ? f.workMode.filter((m: string) => m !== mode)
+                        : [...f.workMode, mode],
+                    }))
+                  }
+                />
+                {mode}
               </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" /> Part-time
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" /> Contract
-              </label>
-            </div>
+            ))}
           </div>
 
-          <Button disabled className="w-full">
-            Apply Filters (Coming Soon)
+          {/* Job Type */}
+          <div>
+            <p className="font-medium mb-2">Job Type</p>
+            {["Full-time", "Part-time", "Contract"].map((type) => (
+              <label key={type} className="flex gap-2">
+                <input
+                  type="checkbox"
+                  checked={filters.jobType.includes(type)}
+                  onChange={() =>
+                    setFilters((f: any) => ({
+                      ...f,
+                      jobType: f.jobType.includes(type)
+                        ? f.jobType.filter((t: string) => t !== type)
+                        : [...f.jobType, type],
+                    }))
+                  }
+                />
+                {type}
+              </label>
+            ))}
+          </div>
+
+          {/* Salary */}
+          <div>
+            <p className="font-medium mb-2">Salary Range</p>
+            <select
+              className="w-full border rounded-md p-2"
+              value={filters.salary}
+              onChange={(e) =>
+                setFilters((f: any) => ({ ...f, salary: e.target.value }))
+              }
+            >
+              {salaryRanges.map((r) => (
+                <option key={r.label} value={r.label}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() =>
+              setFilters({
+                location: "all",
+                workMode: [],
+                jobType: [],
+                salary: "Any",
+              })
+            }
+          >
+            Clear Filters
           </Button>
         </div>
       </aside>
@@ -185,78 +238,102 @@ export default function JobsPage() {
   const { access } = useAuth();
 
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
   const [openJob, setOpenJob] = useState<Job | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  const [filters, setFilters] = useState({
+    location: "all",
+    workMode: [] as string[],
+    jobType: [] as string[],
+    salary: "Any",
+  });
+
   useEffect(() => {
-    async function fetchJobs() {
-      if (!access) return;
+    if (!access) return;
 
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/nayo/jobs/`, {
-          headers: { Authorization: `Bearer ${access}` },
-        });
-        const data = await res.json();
-        setJobs(Array.isArray(data.results) ? data.results : []);
-      } catch (e: any) {
-        setErr(e.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchJobs();
+    fetch(`${API_BASE_URL}/api/nayo/jobs/`, {
+      headers: { Authorization: `Bearer ${access}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setJobs(d.results || []));
   }, [access]);
+
+  const locations = useMemo(
+    () => Array.from(new Set(jobs.map((j) => j.location))).sort(),
+    [jobs]
+  );
+
+  /* ---------------- Filtering Logic ---------------- */
+  const filteredJobs = useMemo(() => {
+    return jobs.filter((job) => {
+      if (filters.location !== "all" && job.location !== filters.location)
+        return false;
+
+      if (
+        filters.workMode.length &&
+        !filters.workMode.includes(job.work_mode)
+      )
+        return false;
+
+      if (
+        filters.jobType.length &&
+        !filters.jobType.includes(job.job_type)
+      )
+        return false;
+
+      if (filters.salary !== "Any") {
+        if (filters.salary === "Below 50k" && job.salary_max > 50000)
+          return false;
+        if (
+          filters.salary === "50k – 100k" &&
+          (job.salary_min < 50000 || job.salary_max > 100000)
+        )
+          return false;
+        if (filters.salary === "100k+" && job.salary_max < 100000)
+          return false;
+      }
+
+      return true;
+    });
+  }, [jobs, filters]);
 
   return (
     <>
-      {/* Filter Panel */}
-      <FilterPanel open={filtersOpen} onClose={() => setFiltersOpen(false)} />
+      <FilterPanel
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        filters={filters}
+        setFilters={setFilters}
+        locations={locations}
+      />
 
-      <div className="max-w-5xl mx-auto px-6 py-10 pb-28 sm:pb-10">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h2 className="text-2xl font-bold">Job Opportunities</h2>
-            <p className="text-muted-foreground">
-              Explore the latest openings and apply directly.
-            </p>
-          </div>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setFiltersOpen(true)}
-          >
+      <div className="max-w-5xl mx-auto px-6 py-10 pb-28">
+        <div className="flex justify-between mb-6">
+          <h2 className="text-2xl font-bold">Job Opportunities</h2>
+          <Button variant="outline" size="icon" onClick={() => setFiltersOpen(true)}>
             <Filter className="w-4 h-4" />
           </Button>
         </div>
 
-        {/* Content */}
-        {loading && <p className="text-sm">Loading jobs…</p>}
-        {err && <p className="text-sm text-red-600">{err}</p>}
-
         <div className="space-y-4">
-          {jobs.map((job) => {
+          {filteredJobs.map((job) => {
             const media = getPrimaryMedia(job.media);
 
             return (
               <Card key={job.id}>
                 <CardHeader>
-                  <CardTitle className="text-base">
-                    {job.title}
-                  </CardTitle>
+                  <CardTitle>{job.title}</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {job.company} — {job.location}
                   </p>
                 </CardHeader>
 
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {job.description}
+                  <p className="text-sm">{job.description}</p>
+                  <p className="text-xs mt-2">
+                    {job.work_mode} • {job.job_type} • {job.currency}{" "}
+                    {job.salary_min}–{job.salary_max}
                   </p>
                 </CardContent>
 
@@ -286,19 +363,12 @@ export default function JobsPage() {
         </div>
       </div>
 
-      {/* Media Modal */}
       {openJob && getPrimaryMedia(openJob.media) && (
         <Dialog open onOpenChange={() => setOpenJob(null)}>
-          <DialogContent
-            className={`transition-all ${
-              expanded ? "max-w-[95vw] h-[90vh]" : "max-w-3xl"
-            }`}
-          >
+          <DialogContent className={expanded ? "max-w-[95vw] h-[90vh]" : "max-w-3xl"}>
             <DialogHeader>
-              <div className="flex justify-between items-center">
-                <DialogTitle>
-                  How to Apply for {openJob.title}
-                </DialogTitle>
+              <div className="flex justify-between">
+                <DialogTitle>How to Apply</DialogTitle>
                 <Button
                   size="icon"
                   variant="ghost"

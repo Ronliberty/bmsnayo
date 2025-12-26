@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -19,6 +19,12 @@ type Media = {
   caption?: string | null;
 };
 
+type Topic = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
 type Article = {
   id: string;
   title: string;
@@ -31,7 +37,7 @@ type Article = {
     reliability_score: number;
   };
   source_reliability_at_fetch: number;
-  topics: string[];
+  topics: Topic[];
   language: string;
   region: string;
   published_at: string;
@@ -45,13 +51,22 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 function FilterPanel({
   open,
   onClose,
+  topics,
+  selectedTopics,
+  onToggleTopic,
+  region,
+  onRegionChange,
 }: {
   open: boolean;
   onClose: () => void;
+  topics: Topic[];
+  selectedTopics: string[]; // slugs
+  onToggleTopic: (slug: string) => void;
+  region: string;
+  onRegionChange: (val: string) => void;
 }) {
   return (
     <>
-      {/* Mobile overlay */}
       {open && (
         <div
           className="fixed inset-0 bg-black/40 z-40 md:hidden"
@@ -75,43 +90,48 @@ function FilterPanel({
           {/* Region */}
           <div>
             <p className="font-medium mb-2">Region</p>
-            <select className="w-full border rounded-md p-2">
-              <option>All</option>
-              <option>Africa</option>
-              <option>Global</option>
-              <option>USA</option>
-              <option>Europe</option>
+            <select
+              value={region}
+              onChange={(e) => onRegionChange(e.target.value)}
+              className="w-full border rounded-md p-2"
+            >
+              <option value="all">All</option>
+              <option value="Africa">Africa</option>
+              <option value="USA">USA</option>
+              <option value="Europe">Europe</option>
+              <option value="Global">Global</option>
             </select>
           </div>
 
           {/* Topics */}
           <div>
             <p className="font-medium mb-2">Topics</p>
-            <div className="space-y-2">
-              <label className="flex gap-2 items-center">
-                <input type="checkbox" /> AI
-              </label>
-              <label className="flex gap-2 items-center">
-                <input type="checkbox" /> Jobs
-              </label>
-              <label className="flex gap-2 items-center">
-                <input type="checkbox" /> Markets
-              </label>
+            <div className="space-y-2 max-h-60 overflow-auto pr-1">
+              {topics.map((topic) => (
+                <label
+                  key={topic.slug}
+                  className="flex gap-2 items-center"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTopics.includes(topic.slug)}
+                    onChange={() => onToggleTopic(topic.slug)}
+                  />
+                  {topic.name}
+                </label>
+              ))}
             </div>
           </div>
 
-          {/* Language */}
-          <div>
-            <p className="font-medium mb-2">Language</p>
-            <select className="w-full border rounded-md p-2">
-              <option>Any</option>
-              <option>English</option>
-              <option>French</option>
-            </select>
-          </div>
-
-          <Button disabled className="w-full">
-            Apply Filters (Coming Soon)
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              onRegionChange("all");
+              selectedTopics.forEach(onToggleTopic);
+            }}
+          >
+            Clear filters
           </Button>
         </div>
       </aside>
@@ -126,8 +146,12 @@ export default function DashboardPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [selectedRegion, setSelectedRegion] = useState("all");
 
   useEffect(() => {
     async function fetchArticles() {
@@ -140,7 +164,6 @@ export default function DashboardPage() {
         const res = await fetch(`${API_BASE_URL}/api/nayo/articles/`, {
           headers: { Authorization: `Bearer ${access}` },
         });
-
         const data = await res.json();
         setArticles(Array.isArray(data.results) ? data.results : []);
       } catch (e: any) {
@@ -153,7 +176,35 @@ export default function DashboardPage() {
     fetchArticles();
   }, [access]);
 
-  const featured = articles.find((a) => a.is_featured);
+  /* -------- Derived Data -------- */
+  const allTopics = useMemo(() => {
+    const map = new Map<string, Topic>();
+
+    articles.forEach((article) => {
+      article.topics?.forEach((topic) => {
+        map.set(topic.slug, topic);
+      });
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+  }, [articles]);
+
+  const filteredArticles = useMemo(() => {
+    return articles.filter((a) => {
+      const regionMatch =
+        selectedRegion === "all" || a.region === selectedRegion;
+
+      const topicMatch =
+        selectedTopics.length === 0 ||
+        a.topics?.some((t) => selectedTopics.includes(t.slug));
+
+      return regionMatch && topicMatch;
+    });
+  }, [articles, selectedTopics, selectedRegion]);
+
+  const featured = filteredArticles.find((a) => a.is_featured);
 
   function toggleExpand(id: string) {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -185,31 +236,23 @@ export default function DashboardPage() {
 
       if (isImage(url)) {
         return (
-          <div key={i} className="mb-4">
-            <img
-              src={url}
-              alt={m.alt || m.caption || "Article media"}
-              className="w-full rounded-md"
-            />
-            {m.caption && (
-              <p className="text-sm text-muted-foreground mt-2">
-                {m.caption}
-              </p>
-            )}
-          </div>
+          <img
+            key={i}
+            src={url}
+            alt={m.alt || "media"}
+            className="w-full rounded-md mb-4"
+          />
         );
       }
 
       if (isVideo(url)) {
         return (
-          <div key={i} className="mb-4">
-            <video src={url} controls className="w-full rounded-md" />
-            {m.caption && (
-              <p className="text-sm text-muted-foreground mt-2">
-                {m.caption}
-              </p>
-            )}
-          </div>
+          <video
+            key={i}
+            src={url}
+            controls
+            className="w-full rounded-md mb-4"
+          />
         );
       }
 
@@ -219,15 +262,29 @@ export default function DashboardPage() {
 
   return (
     <>
-      <FilterPanel open={filtersOpen} onClose={() => setFiltersOpen(false)} />
+      <FilterPanel
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        topics={allTopics}
+        selectedTopics={selectedTopics}
+        onToggleTopic={(slug) =>
+          setSelectedTopics((prev) =>
+            prev.includes(slug)
+              ? prev.filter((t) => t !== slug)
+              : [...prev, slug]
+          )
+        }
+        region={selectedRegion}
+        onRegionChange={setSelectedRegion}
+      />
 
-      <div className="max-w-5xl mx-auto px-6 py-10 pb-28 sm:pb-10 space-y-6">
+      <div className="max-w-5xl mx-auto px-6 py-10 pb-28 space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between">
           <div>
             <h1 className="text-2xl font-bold">Latest News</h1>
             <p className="text-muted-foreground">
-              Stay updated on AI, jobs, and market opportunities.
+              Filter by topic and region
             </p>
           </div>
 
@@ -243,7 +300,6 @@ export default function DashboardPage() {
         {loading && <Skeleton className="h-40 w-full" />}
         {err && <p className="text-sm text-red-600">{err}</p>}
 
-        {/* Featured */}
         {featured && (
           <Card className="border-2 border-primary">
             <CardHeader>
@@ -251,59 +307,42 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               {renderMedia(featured.media)}
-              <p className="text-sm text-muted-foreground mb-2">
-                {featured.summary}
-              </p>
-              <a
-                href={featured.url}
-                target="_blank"
-                className="text-primary text-sm font-medium hover:underline"
-              >
-                Read more →
-              </a>
+              <p className="text-sm">{featured.summary}</p>
             </CardContent>
           </Card>
         )}
 
-        {/* Articles */}
         <div className="space-y-4">
-          {articles.map((article) => {
-            const isOpen = expanded[article.id];
+          {filteredArticles.map((article) => (
+            <Card key={article.id}>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {article.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {renderMedia(article.media)}
 
-            return (
-              <Card key={article.id}>
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    {article.title}
-                  </CardTitle>
-                </CardHeader>
+                <p className="text-sm text-muted-foreground">
+                  {expanded[article.id]
+                    ? article.summary
+                    : article.summary.slice(0, 300) + "..."}
+                </p>
 
-                <CardContent>
-                  {renderMedia(article.media)}
+                <div className="flex justify-between text-xs mt-2">
+                  <span>{article.source.name}</span>
+                  <span>{formatDate(article.published_at)}</span>
+                </div>
 
-                  <p className="text-sm text-muted-foreground">
-                    {isOpen ? article.summary : article.summary.slice(0, 300)}
-                    {!isOpen && "..."}
-                  </p>
-
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>
-                      {article.source.name} •{" "}
-                      {article.source_reliability_at_fetch}%
-                    </span>
-                    <span>{formatDate(article.published_at)}</span>
-                  </div>
-
-                  <button
-                    onClick={() => toggleExpand(article.id)}
-                    className="text-primary text-sm font-medium hover:underline mt-2"
-                  >
-                    {isOpen ? "Show less" : "Read more"}
-                  </button>
-                </CardContent>
-              </Card>
-            );
-          })}
+                <button
+                  onClick={() => toggleExpand(article.id)}
+                  className="text-primary text-sm mt-2"
+                >
+                  {expanded[article.id] ? "Show less" : "Read more"}
+                </button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </>
