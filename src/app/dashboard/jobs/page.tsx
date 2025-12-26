@@ -32,6 +32,8 @@ type Media = {
   caption?: string | null;
 };
 
+type RemoteType = "remote" | "hybrid" | "onsite";
+
 type Job = {
   id: string;
   title: string;
@@ -39,10 +41,9 @@ type Job = {
   location: string;
   description: string;
   currency: string;
-  salary_min: number;
-  salary_max: number;
-  job_type: "Full-time" | "Part-time" | "Contract";
-  work_mode: "Remote" | "Office" | "Hybrid";
+  salary_min: number | null;
+  salary_max: number | null;
+  remote_type: RemoteType;
   posted_at: string;
   url: string;
   media?: Media[];
@@ -50,6 +51,12 @@ type Job = {
 
 /* ---------------- Helpers ---------------- */
 const getPrimaryMedia = (media?: Media[]) => media?.[0] || null;
+
+const REMOTE_LABELS: Record<RemoteType, string> = {
+  remote: "Remote",
+  hybrid: "Hybrid",
+  onsite: "On-site",
+};
 
 /* ---------------- Modal Media ---------------- */
 function RenderModalMedia({
@@ -103,11 +110,12 @@ function FilterPanel({
   setFilters,
   locations,
 }: any) {
-  const salaryRanges = [
-    { label: "Any", min: 0 },
-    { label: "Below 50k", min: 1, max: 50000 },
-    { label: "50k – 100k", min: 50000, max: 100000 },
-    { label: "100k+", min: 100000 },
+  const hourlyRates = [
+    { label: "Any" },
+    { label: "Below $10/hr", max: 10 },
+    { label: "$10 – $25/hr", min: 10, max: 25 },
+    { label: "$25 – $50/hr", min: 25, max: 50 },
+    { label: "$50+/hr", min: 50 },
   ];
 
   return (
@@ -151,61 +159,39 @@ function FilterPanel({
             </select>
           </div>
 
-          {/* Work Mode */}
+          {/* Remote Type */}
           <div>
             <p className="font-medium mb-2">Work Mode</p>
-            {["Remote", "Office", "Hybrid"].map((mode) => (
+            {(["remote", "hybrid", "onsite"] as RemoteType[]).map((mode) => (
               <label key={mode} className="flex gap-2">
                 <input
                   type="checkbox"
-                  checked={filters.workMode.includes(mode)}
+                  checked={filters.remote.includes(mode)}
                   onChange={() =>
                     setFilters((f: any) => ({
                       ...f,
-                      workMode: f.workMode.includes(mode)
-                        ? f.workMode.filter((m: string) => m !== mode)
-                        : [...f.workMode, mode],
+                      remote: f.remote.includes(mode)
+                        ? f.remote.filter((m: RemoteType) => m !== mode)
+                        : [...f.remote, mode],
                     }))
                   }
                 />
-                {mode}
+                {REMOTE_LABELS[mode]}
               </label>
             ))}
           </div>
 
-          {/* Job Type */}
+          {/* Hourly Rate */}
           <div>
-            <p className="font-medium mb-2">Job Type</p>
-            {["Full-time", "Part-time", "Contract"].map((type) => (
-              <label key={type} className="flex gap-2">
-                <input
-                  type="checkbox"
-                  checked={filters.jobType.includes(type)}
-                  onChange={() =>
-                    setFilters((f: any) => ({
-                      ...f,
-                      jobType: f.jobType.includes(type)
-                        ? f.jobType.filter((t: string) => t !== type)
-                        : [...f.jobType, type],
-                    }))
-                  }
-                />
-                {type}
-              </label>
-            ))}
-          </div>
-
-          {/* Salary */}
-          <div>
-            <p className="font-medium mb-2">Salary Range</p>
+            <p className="font-medium mb-2">Hourly Rate</p>
             <select
               className="w-full border rounded-md p-2"
-              value={filters.salary}
+              value={filters.rate}
               onChange={(e) =>
-                setFilters((f: any) => ({ ...f, salary: e.target.value }))
+                setFilters((f: any) => ({ ...f, rate: e.target.value }))
               }
             >
-              {salaryRanges.map((r) => (
+              {hourlyRates.map((r) => (
                 <option key={r.label} value={r.label}>
                   {r.label}
                 </option>
@@ -219,9 +205,8 @@ function FilterPanel({
             onClick={() =>
               setFilters({
                 location: "all",
-                workMode: [],
-                jobType: [],
-                salary: "Any",
+                remote: [],
+                rate: "Any",
               })
             }
           >
@@ -242,11 +227,14 @@ export default function JobsPage() {
   const [expanded, setExpanded] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    location: string;
+    remote: RemoteType[];
+    rate: string;
+  }>({
     location: "all",
-    workMode: [] as string[],
-    jobType: [] as string[],
-    salary: "Any",
+    remote: [],
+    rate: "Any",
   });
 
   useEffect(() => {
@@ -270,28 +258,19 @@ export default function JobsPage() {
       if (filters.location !== "all" && job.location !== filters.location)
         return false;
 
-      if (
-        filters.workMode.length &&
-        !filters.workMode.includes(job.work_mode)
-      )
+      if (filters.remote.length && !filters.remote.includes(job.remote_type))
         return false;
 
-      if (
-        filters.jobType.length &&
-        !filters.jobType.includes(job.job_type)
-      )
-        return false;
+      if (filters.rate !== "Any") {
+        const min = job.salary_min ?? 0;
+        const max = job.salary_max ?? Infinity;
 
-      if (filters.salary !== "Any") {
-        if (filters.salary === "Below 50k" && job.salary_max > 50000)
+        if (filters.rate === "Below $10/hr" && min >= 10) return false;
+        if (filters.rate === "$10 – $25/hr" && (max < 10 || min > 25))
           return false;
-        if (
-          filters.salary === "50k – 100k" &&
-          (job.salary_min < 50000 || job.salary_max > 100000)
-        )
+        if (filters.rate === "$25 – $50/hr" && (max < 25 || min > 50))
           return false;
-        if (filters.salary === "100k+" && job.salary_max < 100000)
-          return false;
+        if (filters.rate === "$50+/hr" && max < 50) return false;
       }
 
       return true;
@@ -311,7 +290,11 @@ export default function JobsPage() {
       <div className="max-w-5xl mx-auto px-6 py-10 pb-28">
         <div className="flex justify-between mb-6">
           <h2 className="text-2xl font-bold">Job Opportunities</h2>
-          <Button variant="outline" size="icon" onClick={() => setFiltersOpen(true)}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setFiltersOpen(true)}
+          >
             <Filter className="w-4 h-4" />
           </Button>
         </div>
@@ -332,8 +315,8 @@ export default function JobsPage() {
                 <CardContent>
                   <p className="text-sm">{job.description}</p>
                   <p className="text-xs mt-2">
-                    {job.work_mode} • {job.job_type} • {job.currency}{" "}
-                    {job.salary_min}–{job.salary_max}
+                    {REMOTE_LABELS[job.remote_type]} • {job.currency}{" "}
+                    {job.salary_min ?? "?"}–{job.salary_max ?? "?"}/hr
                   </p>
                 </CardContent>
 
@@ -365,7 +348,9 @@ export default function JobsPage() {
 
       {openJob && getPrimaryMedia(openJob.media) && (
         <Dialog open onOpenChange={() => setOpenJob(null)}>
-          <DialogContent className={expanded ? "max-w-[95vw] h-[90vh]" : "max-w-3xl"}>
+          <DialogContent
+            className={expanded ? "max-w-[95vw] h-[90vh]" : "max-w-3xl"}
+          >
             <DialogHeader>
               <div className="flex justify-between">
                 <DialogTitle>How to Apply</DialogTitle>
