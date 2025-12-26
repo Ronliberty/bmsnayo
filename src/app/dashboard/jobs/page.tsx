@@ -15,14 +15,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Maximize2, Minimize2, Lock } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
+  Maximize2,
+  Minimize2,
+  Filter,
+  X,
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+function mediaUrl(path: string) {
+  return new URL(path, API_BASE_URL).toString();
+}
+
+/* ---------------- Types ---------------- */
+type Media = {
+  id: string;
+  media_type: "image" | "video" | "file";
+  file: string;
+  caption?: string | null;
+};
 
 type Job = {
   id: string;
@@ -35,9 +48,139 @@ type Job = {
   salary_max: number;
   posted_at: string;
   url: string;
-  video_url?: string | null;
+  media?: Media[];
 };
 
+/* ---------------- Helpers ---------------- */
+const getPrimaryMedia = (media?: Media[]) => media?.[0] || null;
+
+/* ---------------- Modal Media ---------------- */
+function RenderModalMedia({
+  media,
+  expanded,
+}: {
+  media: Media;
+  expanded: boolean;
+}) {
+  const url = mediaUrl(media.file);
+
+  if (media.media_type === "image") {
+    return (
+      <img
+        src={url}
+        alt={media.caption || "How to apply"}
+        className={`w-full rounded-xl object-contain ${
+          expanded ? "max-h-[75vh]" : "max-h-[60vh]"
+        }`}
+      />
+    );
+  }
+
+  if (media.media_type === "video") {
+    return (
+      <video
+        src={url}
+        controls
+        autoPlay
+        className={`w-full rounded-xl ${
+          expanded ? "h-[75vh]" : "aspect-video"
+        }`}
+      />
+    );
+  }
+
+  return (
+    <div className="p-6 text-center">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline text-sm"
+      >
+        Download attachment
+      </a>
+    </div>
+  );
+}
+
+/* ---------------- Filter Panel ---------------- */
+function FilterPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <>
+      {/* Mobile Overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={`fixed top-0 right-0 h-full w-72 bg-background border-l z-50
+        transform transition-transform duration-300
+        ${open ? "translate-x-0" : "translate-x-full"}`}
+      >
+        <div className="p-4 border-b flex items-center justify-between">
+          <h3 className="font-semibold">Filters</h3>
+          <Button size="icon" variant="ghost" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <div className="p-4 space-y-6 text-sm">
+          {/* Category */}
+          <div>
+            <p className="font-medium mb-2">Category</p>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" /> Remote
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" /> Office
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" /> Hybrid
+              </label>
+            </div>
+          </div>
+
+          {/* Location */}
+          <div>
+            <p className="font-medium mb-2">Location</p>
+            <select className="w-full border rounded-md p-2">
+              <option>Any</option>
+              <option>Nairobi</option>
+              <option>Mombasa</option>
+              <option>Remote</option>
+            </select>
+          </div>
+
+          {/* Type */}
+          <div>
+            <p className="font-medium mb-2">Job Type</p>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" /> Full-time
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" /> Part-time
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" /> Contract
+              </label>
+            </div>
+          </div>
+
+          <Button disabled className="w-full">
+            Apply Filters (Coming Soon)
+          </Button>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+/* ---------------- Page ---------------- */
 export default function JobsPage() {
   const { access } = useAuth();
 
@@ -45,37 +188,21 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [openJob, setOpenJob] = useState<Job | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     async function fetchJobs() {
       if (!access) return;
 
       try {
-        setLoading(true);
-        setErr(null);
-
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/nayo/jobs/`,
-          {
-            headers: {
-              Authorization: `Bearer ${access}`,
-            },
-          }
-        );
-
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.detail || "Failed to fetch jobs");
-        }
-
+        const res = await fetch(`${API_BASE_URL}/api/nayo/jobs/`, {
+          headers: { Authorization: `Bearer ${access}` },
+        });
         const data = await res.json();
-
-        // ✅ DRF pagination-safe
         setJobs(Array.isArray(data.results) ? data.results : []);
-      } catch (error: any) {
-        console.error("Error fetching jobs:", error);
-        setErr(error.message);
+      } catch (e: any) {
+        setErr(e.message);
       } finally {
         setLoading(false);
       }
@@ -85,135 +212,110 @@ export default function JobsPage() {
   }, [access]);
 
   return (
-    <TooltipProvider>
-      <div className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold">Job Opportunities</h2>
-        <p className="text-muted-foreground">
-          Explore the latest openings and apply directly.
-        </p>
+    <>
+      {/* Filter Panel */}
+      <FilterPanel open={filtersOpen} onClose={() => setFiltersOpen(false)} />
 
-        {loading && (
-          <p className="text-sm text-muted-foreground">Loading jobs…</p>
-        )}
-        {err && <p className="text-sm text-red-600">{err}</p>}
+      <div className="max-w-5xl mx-auto px-6 py-10 pb-28 sm:pb-10">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h2 className="text-2xl font-bold">Job Opportunities</h2>
+            <p className="text-muted-foreground">
+              Explore the latest openings and apply directly.
+            </p>
+          </div>
 
-        {!loading && !err && jobs.length === 0 && (
-          <p className="text-muted-foreground">No jobs found.</p>
-        )}
-
-        <div className="space-y-4">
-          {jobs.map((job) => (
-            <Card key={job.id} className="shadow-md hover:shadow-lg transition">
-              <CardHeader>
-                <CardTitle className="text-base font-semibold">
-                  {job.title}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {job.company} — {job.location}
-                </p>
-              </CardHeader>
-
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {job.description}
-                </p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    {job.currency}{" "}
-                    {job.salary_min?.toLocaleString()} –{" "}
-                    {job.salary_max?.toLocaleString()}
-                  </span>
-                  <span>
-                    Posted:{" "}
-                    {new Date(job.posted_at).toLocaleDateString()}
-                  </span>
-                </div>
-              </CardContent>
-
-              <CardFooter className="flex justify-between gap-2">
-                <Button asChild className="flex-1">
-                  <a
-                    href={job.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Apply Now
-                  </a>
-                </Button>
-
-                {job.video_url ? (
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {
-                      setOpenJob(job);
-                      setIsExpanded(false);
-                    }}
-                  >
-                    How to Apply
-                  </Button>
-                ) : (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        disabled
-                        className="flex-1 flex items-center gap-2 opacity-70 cursor-not-allowed"
-                      >
-                        <Lock className="w-4 h-4" />
-                        No video
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>No video available yet</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-              </CardFooter>
-            </Card>
-          ))}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <Filter className="w-4 h-4" />
+          </Button>
         </div>
 
-        {/* Video Modal */}
-        {openJob && openJob.video_url && (
-          <Dialog open onOpenChange={() => setOpenJob(null)}>
-            <DialogContent
-              className={`transition-all duration-500 ${
-                isExpanded ? "max-w-[95vw] h-[90vh]" : "max-w-2xl"
-              }`}
-            >
-              <DialogHeader>
-                <div className="flex justify-between items-center">
-                  <DialogTitle>
-                    How to Apply for {openJob.title}
-                  </DialogTitle>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                  >
-                    {isExpanded ? <Minimize2 /> : <Maximize2 />}
-                  </Button>
-                </div>
-              </DialogHeader>
+        {/* Content */}
+        {loading && <p className="text-sm">Loading jobs…</p>}
+        {err && <p className="text-sm text-red-600">{err}</p>}
 
-              <div
-                className={`w-full bg-black rounded-xl overflow-hidden ${
-                  isExpanded ? "h-[75vh]" : "aspect-video"
-                }`}
-              >
-                <iframe
-                  className="w-full h-full"
-                  src={openJob.video_url}
-                  title={`How to Apply for ${openJob.title}`}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+        <div className="space-y-4">
+          {jobs.map((job) => {
+            const media = getPrimaryMedia(job.media);
+
+            return (
+              <Card key={job.id}>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {job.title}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {job.company} — {job.location}
+                  </p>
+                </CardHeader>
+
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {job.description}
+                  </p>
+                </CardContent>
+
+                <CardFooter className="flex gap-2">
+                  <Button asChild className="flex-1">
+                    <a href={job.url} target="_blank">
+                      Apply Now
+                    </a>
+                  </Button>
+
+                  {media && (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setOpenJob(job);
+                        setExpanded(false);
+                      }}
+                    >
+                      How to Apply
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
       </div>
-    </TooltipProvider>
+
+      {/* Media Modal */}
+      {openJob && getPrimaryMedia(openJob.media) && (
+        <Dialog open onOpenChange={() => setOpenJob(null)}>
+          <DialogContent
+            className={`transition-all ${
+              expanded ? "max-w-[95vw] h-[90vh]" : "max-w-3xl"
+            }`}
+          >
+            <DialogHeader>
+              <div className="flex justify-between items-center">
+                <DialogTitle>
+                  How to Apply for {openJob.title}
+                </DialogTitle>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setExpanded(!expanded)}
+                >
+                  {expanded ? <Minimize2 /> : <Maximize2 />}
+                </Button>
+              </div>
+            </DialogHeader>
+
+            <RenderModalMedia
+              media={getPrimaryMedia(openJob.media)!}
+              expanded={expanded}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }
