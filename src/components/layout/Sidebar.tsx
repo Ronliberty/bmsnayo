@@ -38,7 +38,7 @@ export function Sidebar({
     
     { name: "Analytics", href: "/dashboard/finance", icon: BarChart2, restricted: false },
     { name: "Partnerships", href: "/dashboard/partnerships", icon: Handshake, restricted: false },
-    { name: "sell", href: "/dashboard/seller/selling", icon: BadgeDollarSign, restricted: false },
+    { name: "sell", href: "/dashboard/seller", icon: BadgeDollarSign, restricted: false },
  
 
     // Restricted items
