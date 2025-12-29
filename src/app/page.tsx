@@ -43,7 +43,7 @@ export default function LandingPage() {
       href="/dashboard"
       className="bg-white text-purple-900 dark:bg-purple-600 dark:text-white px-4 sm:px-6 py-2 rounded-full font-medium shadow-lg hover:opacity-90 transition duration-300 text-sm sm:text-base"
     >
-      Get Started Free
+     login
     </Link>
   </motion.nav>
 
