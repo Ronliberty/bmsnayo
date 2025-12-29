@@ -1,165 +1,116 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-export default function SellerUploadPage() {
+type Media = {
+  id: string;
+  file: string;
+  media_type: "image" | "video" | "file";
+};
+
+type MarketplaceItem = {
+  id: string;
+  title: string;
+  description: string;
+  price: string;
+  currency: string;
+  availability_quantity: number | null;
+  media: Media[];
+};
+
+type Order = {
+  id: string;
+  status: string;
+  buyer_name: string;
+  created_at: string;
+  item: MarketplaceItem;
+};
+
+export default function SellerOrdersPage() {
   const { access } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [itemType, setItemType] = useState<"service" | "app" | "website">(
-    "service"
-  );
-  const [active, setActive] = useState(true);
-
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submitItem() {
+  useEffect(() => {
     if (!access) return;
 
-    setLoading(true);
-    setError(null);
-    setSuccess(false);
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/market/items/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${access}`,
-          },
-          body: JSON.stringify({
-            title,
-            description,
-            item_type: itemType,
-            price: Number(price),
-            currency: "USD",
-            tags: ["seller"],
-            active,
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(
-          data?.detail || "Failed to create item. Please check your input."
+    async function fetchOrders() {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/market/orders/?role=seller`,
+          {
+            headers: { Authorization: `Bearer ${access}` },
+          }
         );
-        return;
+
+        if (!res.ok) throw new Error("Failed to fetch seller orders");
+
+        const data = await res.json();
+        setOrders(Array.isArray(data) ? data : data.results ?? []);
+      } catch (e: any) {
+        setErr(e.message);
+      } finally {
+        setLoading(false);
       }
-
-      // Reset form
-      setTitle("");
-      setDescription("");
-      setPrice("");
-      setItemType("service");
-
-      setSuccess(true);
-    } catch (err) {
-      setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
     }
-  }
 
-  // Auto-hide success message
-  useEffect(() => {
-    if (!success) return;
-    const timer = setTimeout(() => setSuccess(false), 4000);
-    return () => clearTimeout(timer);
-  }, [success]);
+    fetchOrders();
+  }, [access]);
+
+  if (loading) return <p className="p-6">Loading orders...</p>;
+  if (err) return <p className="p-6 text-red-600">{err}</p>;
+  if (orders.length === 0) return <p className="p-6">No orders found</p>;
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Create Marketplace Item</CardTitle>
-        </CardHeader>
+    <div className="p-6 space-y-4">
+      <h2 className="text-2xl font-bold">My Sales</h2>
 
-        <CardContent className="space-y-4">
-          {/* SUCCESS UI */}
-          {success && (
-            <div className="rounded-lg border border-green-300 bg-green-50 p-4 text-green-800">
-              <p className="font-medium">✅ Item created successfully</p>
-              <p className="text-sm">
-                Your listing is now available in the marketplace.
+      {orders.map((order) => (
+        <Link
+          key={order.id}
+          href={`/dashboard/marketplace/sales/${order.id}`}
+        >
+          <Card className="hover:shadow-lg transition">
+            <CardHeader>
+              <CardTitle>{order.item.title}</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Buyer: {order.buyer_name} • Status: {order.status}
               </p>
-            </div>
-          )}
+            </CardHeader>
 
-          {/* ERROR UI */}
-          {error && (
-            <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
-              {error}
-            </div>
-          )}
+            <CardContent className="space-y-2">
+              {order.item.media?.[0] && (
+                <img
+                  src={order.item.media[0].file}
+                  alt={order.item.title}
+                  className="w-full h-40 object-cover rounded-md"
+                />
+              )}
 
-          <div>
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Product or service name"
-            />
-          </div>
+              <p className="text-sm line-clamp-2">
+                {order.item.description}
+              </p>
 
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what you are offering"
-            />
-          </div>
+              <p className="font-semibold">
+                {new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: order.item.currency,
+                }).format(Number(order.item.price))}
+              </p>
 
-          <div>
-            <Label htmlFor="price">Price</Label>
-            <Input
-              id="price"
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="99"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="type">Item Type</Label>
-            <select
-              id="type"
-              value={itemType}
-              onChange={(e) =>
-                setItemType(e.target.value as "service" | "app" | "website")
-              }
-              className="border rounded-md p-2 w-full"
-            >
-              <option value="service">Service</option>
-              <option value="app">App</option>
-              <option value="website">Website</option>
-            </select>
-          </div>
-
-          <Button
-            onClick={submitItem}
-            disabled={loading || !title || !price}
-            className="w-full"
-          >
-            {loading ? "Creating..." : "Create Item"}
-          </Button>
-        </CardContent>
-      </Card>
+              {order.item.availability_quantity !== null && (
+                <p className="text-xs text-muted-foreground">
+                  Remaining stock: {order.item.availability_quantity}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+      ))}
     </div>
   );
 }
