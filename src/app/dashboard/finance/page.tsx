@@ -51,7 +51,7 @@ export default function FinancePage() {
               Account Balance
             </h2>
             <p className="text-2xl sm:text-3xl font-bold tracking-tight break-words">
-              {account.currency} {parseFloat(account.balance).toFixed(2)}
+           {account?.currency ?? "USD"} {account ? parseFloat(account.balance).toFixed(2) : "0.00"}
             </p>
           </>
         )}
