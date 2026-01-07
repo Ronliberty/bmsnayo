@@ -37,7 +37,7 @@ export default function SellerOrdersPage() {
 
     setLoading(true);
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/market/orders/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/market/orders/?role=seller`,
       {
         headers: {
           Authorization: `Bearer ${access}`,
