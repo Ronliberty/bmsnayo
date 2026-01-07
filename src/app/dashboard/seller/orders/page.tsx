@@ -37,7 +37,7 @@ export default function SellerOrdersPage() {
 
     setLoading(true);
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/orders/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/market/orders/`,
       {
         headers: {
           Authorization: `Bearer ${access}`,
@@ -54,7 +54,7 @@ export default function SellerOrdersPage() {
     if (!access) return;
 
     await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}/${action}/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/market/orders/${orderId}/${action}/`,
       {
         method: "POST",
         headers: {
