@@ -66,8 +66,8 @@ export default function SellerItemsPage() {
           </Button>
           <h1 className="text-2xl font-bold">My Marketplace Items</h1>
         </div>
-        <Button asChild>
-          <a href="/dashboard/market/create">+ New Item</a>
+        <Button >
+          <a href="/dashboard/seller">+ New Item</a>
         </Button>
       </div>
 
