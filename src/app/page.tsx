@@ -79,8 +79,9 @@ export default function LandingPage() {
 
           {/* Notion Link (NEW TAB) */}
           <a
-            href="https://fire-swallow-ce4.notion.site/NAYO-App-Home-2ace6a54ea1581e79b92f0603014015b"
-            target="_blank"
+            // href="https://fire-swallow-ce4.notion.site/NAYO-App-Home-2ace6a54ea1581e79b92f0603014015b"
+            href="/about"
+            // target="_blank"
             rel="noopener noreferrer"
             className="border border-gray-400 dark:border-gray-600 px-6 sm:px-8 py-3 rounded-full text-base font-medium hover:bg-white/10 transition"
           >
