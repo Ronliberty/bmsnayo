@@ -1,5 +1,7 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+/* app/about/about.css */
+/* Page-specific styles for the about/landing page. 
+   This includes the fixed theming from before, but you can add or override styles here as needed for this page.
+   Global styles from globals.css will still apply unless overridden. */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -152,3 +154,5 @@
     @apply text-sm sm:text-base leading-relaxed;
   }
 }
+
+/* Add any additional page-specific styles here, e.g., for landing page elements */

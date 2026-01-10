@@ -1,122 +1,222 @@
+// components/about/Navbar.tsx
+'use client'; // Enable client-side rendering for interactivity
 
-"use client";
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion'; // Assuming framer-motion is installed
 
-import Link from "next/link";
-import { useState } from "react";
+const Navbar: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-export default function Navbar() {
-  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    // Simulate loading for demonstration; in real app, tie to actual loading logic
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const targetId = href.replace('#', '');
+    const targetElement = document.getElementById(targetId);
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: 'smooth' });
+    }
+    if (isOpen) {
+      setIsOpen(false);
+    }
+  };
+
+  if (isLoading) {
+    return <NavbarSkeleton />;
+  }
 
   return (
-    <nav className="fixed top-0 left-0 z-50 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="text-lg font-semibold tracking-tight text-foreground"
-        >
-          Nayo
-        </Link>
+    <nav className="bg-background shadow-md sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Link href="/" className="text-2xl font-bold text-primary">
+              Nayo
+            </Link>
+          </div>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8 text-sm">
-          {/* Primary */}
-          <Link
-            href="#about"
-            className="text-muted-foreground hover:text-foreground transition"
-          >
-            About
-          </Link>
-
-          <Link
-            href="#pricing"
-            className="text-muted-foreground hover:text-foreground transition"
-          >
-            Pricing
-          </Link>
-
-          {/* Social Proof */}
-          <Link
-            href="#testimonials"
-            className="text-muted-foreground hover:text-foreground transition"
-          >
-            Testimonials
-          </Link>
-
-          <Link
-            href="#partners"
-            className="text-muted-foreground hover:text-foreground transition"
-          >
-            Partners
-          </Link>
-
-          {/* Resources */}
-          <Link
-            href="/blog"
-            className="text-muted-foreground hover:text-foreground transition"
-          >
-            Blog
-          </Link>
-
-          <Link
-            href="#faqs"
-            className="text-muted-foreground hover:text-foreground transition"
-          >
-            FAQs
-          </Link>
-
-          {/* CTA */}
-          <Link
-            href="/auth/login"
-            className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:opacity-90 transition"
-          >
-            Login
-          </Link>
-        </div>
-
-        {/* Mobile Toggle */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden text-foreground"
-          aria-label="Toggle menu"
-        >
-          ☰
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {open && (
-        <div className="md:hidden border-t bg-background">
-          <div className="flex flex-col gap-4 px-6 py-6 text-sm">
-            <Link href="#about" onClick={() => setOpen(false)}>
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center space-x-4">
+            <Link
+              href="#about"
+              onClick={(e) => handleSmoothScroll(e, '#about')}
+              className="text-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
+            >
               About
             </Link>
-            <Link href="#pricing" onClick={() => setOpen(false)}>
+            <Link
+              href="#pricing"
+              onClick={(e) => handleSmoothScroll(e, '#pricing')}
+              className="text-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
+            >
               Pricing
             </Link>
-            <Link href="#testimonials" onClick={() => setOpen(false)}>
+            <Link
+              href="#testimonials"
+              onClick={(e) => handleSmoothScroll(e, '#testimonials')}
+              className="text-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
+            >
               Testimonials
             </Link>
-            <Link href="#partners" onClick={() => setOpen(false)}>
+            <Link
+              href="#partners"
+              onClick={(e) => handleSmoothScroll(e, '#partners')}
+              className="text-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
+            >
               Partners
             </Link>
-            <Link href="/blog" onClick={() => setOpen(false)}>
+            <Link
+              href="#blog"
+              onClick={(e) => handleSmoothScroll(e, '#blog')}
+              className="text-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
+            >
               Blog
             </Link>
-            <Link href="#faqs" onClick={() => setOpen(false)}>
+            <Link
+              href="#faqs"
+              onClick={(e) => handleSmoothScroll(e, '#faqs')}
+              className="text-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
+            >
               FAQs
             </Link>
-
+            <Link
+              href="#contact"
+              onClick={(e) => handleSmoothScroll(e, '#contact')}
+              className="text-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Contact
+            </Link>
             <Link
               href="/auth/login"
-              onClick={() => setOpen(false)}
-              className="mt-2 rounded-md bg-primary px-4 py-2 text-center text-primary-foreground"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90"
             >
               Login
             </Link>
           </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={toggleMenu}
+              className="inline-flex items-center justify-center p-2 rounded-md text-foreground hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <span className="sr-only">Open main menu</span>
+              {isOpen ? (
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="md:hidden"
+        >
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <Link
+              href="#about"
+              onClick={(e) => handleSmoothScroll(e, '#about')}
+              className="block text-foreground hover:text-primary px-3 py-2 rounded-md text-base font-medium"
+            >
+              About
+            </Link>
+            <Link
+              href="#pricing"
+              onClick={(e) => handleSmoothScroll(e, '#pricing')}
+              className="block text-foreground hover:text-primary px-3 py-2 rounded-md text-base font-medium"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="#testimonials"
+              onClick={(e) => handleSmoothScroll(e, '#testimonials')}
+              className="block text-foreground hover:text-primary px-3 py-2 rounded-md text-base font-medium"
+            >
+              Testimonials
+            </Link>
+            <Link
+              href="#partners"
+              onClick={(e) => handleSmoothScroll(e, '#partners')}
+              className="block text-foreground hover:text-primary px-3 py-2 rounded-md text-base font-medium"
+            >
+              Partners
+            </Link>
+            <Link
+              href="#blog"
+              onClick={(e) => handleSmoothScroll(e, '#blog')}
+              className="block text-foreground hover:text-primary px-3 py-2 rounded-md text-base font-medium"
+            >
+              Blog
+            </Link>
+            <Link
+              href="#faqs"
+              onClick={(e) => handleSmoothScroll(e, '#faqs')}
+              className="block text-foreground hover:text-primary px-3 py-2 rounded-md text-base font-medium"
+            >
+              FAQs
+            </Link>
+            <Link
+              href="#contact"
+              onClick={(e) => handleSmoothScroll(e, '#contact')}
+              className="block text-foreground hover:text-primary px-3 py-2 rounded-md text-base font-medium"
+            >
+              Contact
+            </Link>
+            <Link
+              href="/auth/login"
+              className="block bg-primary text-primary-foreground px-3 py-2 rounded-md text-base font-medium hover:bg-primary/90"
+            >
+              Login
+            </Link>
+          </div>
+        </motion.div>
       )}
     </nav>
   );
-}
+};
+
+const NavbarSkeleton: React.FC = () => {
+  return (
+    <nav className="bg-background shadow-md sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
+            <div className="w-24 h-8 bg-muted animate-pulse rounded"></div>
+          </div>
+          <div className="hidden md:flex items-center space-x-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="w-20 h-4 bg-muted animate-pulse rounded"></div>
+            ))}
+          </div>
+          <div className="md:hidden flex items-center">
+            <div className="w-8 h-8 bg-muted animate-pulse rounded"></div>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;

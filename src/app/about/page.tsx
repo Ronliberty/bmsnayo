@@ -10,6 +10,7 @@ import PartnersSection from '@/components/about/PartnersSection';
 import BlogsSection from '@/components/about/BlogSection';
 import FaqsSection from '@/components/about/FaqsSection';
 import Footer from '@/components/about/Footer';
+import HowItWorksSection from '@/components/about/HowSection';
 
 export default function AboutPage() {
   return (
@@ -17,11 +18,13 @@ export default function AboutPage() {
     <Navbar />
     <main className="min-h-screen">
       <HeroSection />
+    
       <AboutSection />
       <PricingSection />
       <Testimonial />
       <PartnersSection />
       <BlogsSection />
+      <HowItWorksSection />
       <FaqsSection />
       <ContactSection />
       <Footer />
