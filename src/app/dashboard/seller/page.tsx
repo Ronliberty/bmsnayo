@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "lucide-react";
+import { useSellerStatus } from "@/app/hooks/useSellerStatus";
+
+
 
 export default function SellerUploadPage() {
   const { access } = useAuth();
@@ -24,7 +27,15 @@ export default function SellerUploadPage() {
   const [active, setActive] = useState(true);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+  const { status, isApproved } = useSellerStatus();
 
+  if (status === "loading") {
+    return <div className="p-12 text-center">Checking access...</div>;
+  }
+
+  if (!isApproved) {
+    return null; // will be redirected by the hook anyway
+  }
   async function submitItem() {
     if (!access) return;
 
