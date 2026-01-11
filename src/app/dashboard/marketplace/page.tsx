@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useAccountBalance } from "@/app/hooks/useAccountBalance";
 import { OrdersCart } from "@/components/marketplace/OrdersCart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSearch } from "@/context/SearchContext"; // ← Added import
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -74,6 +75,7 @@ export default function MarketplacePage() {
   const { access, user } = useAuth();
   const router = useRouter();
   const { account, refresh: refreshAccount } = useAccountBalance();
+  const { searchQuery } = useSearch(); // ← Using global search
 
   const [items, setItems] = useState<MarketplaceItem[]>([]);
   const [wishlist, setWishlist] = useState<number[]>([]);
@@ -114,7 +116,23 @@ export default function MarketplacePage() {
   }, [access]);
 
   /* =======================
-     Wishlist Toggle (POST)
+     Client-side Search Filtering
+     ======================= */
+  const filteredItems = items.filter((item) => {
+    if (!searchQuery?.trim()) return true;
+
+    const query = searchQuery.toLowerCase().trim();
+
+    return (
+      item.title.toLowerCase().includes(query) ||
+      item.description.toLowerCase().includes(query) ||
+      item.seller_name.toLowerCase().includes(query) ||
+      item.item_type.toLowerCase().includes(query)
+    );
+  });
+
+  /* =======================
+     Wishlist Toggle
      ======================= */
   async function toggleWishlist(itemId: string, sellerId: number) {
     if (!access || sellerId === user?.id) return;
@@ -200,12 +218,31 @@ export default function MarketplacePage() {
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {loading &&
-          Array.from({ length: 6 }).map((_, i) => <ItemSkeleton key={i} />)}
+      {/* Search feedback */}
+      {searchQuery.trim() && (
+        <p className="text-sm text-muted-foreground">
+          Results for: <strong>"{searchQuery.trim()}"</strong>
+        </p>
+      )}
 
-        {!loading &&
-          items.map((item) => {
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading ? (
+          Array.from({ length: 6 }).map((_, i) => <ItemSkeleton key={i} />)
+        ) : filteredItems.length === 0 ? (
+          <div className="col-span-full py-12 text-center space-y-2">
+            <p className="text-lg font-medium">
+              {searchQuery.trim()
+                ? "No matching products found"
+                : "No products available right now"}
+            </p>
+            {searchQuery.trim() && (
+              <p className="text-sm text-muted-foreground">
+                Try different keywords or check back later
+              </p>
+            )}
+          </div>
+        ) : (
+          filteredItems.map((item) => {
             const soldOut =
               item.item_type !== "service" &&
               item.availability_quantity <= 0;
@@ -217,6 +254,7 @@ export default function MarketplacePage() {
                     <img
                       src={mediaUrl(item.media[0].file)}
                       className="h-full w-full object-cover"
+                      alt={item.title}
                     />
                   ) : (
                     <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -242,20 +280,17 @@ export default function MarketplacePage() {
                 <CardFooter className="flex gap-2">
                   <Button
                     variant={
-                      wishlist.includes(Number(item.id))
-                        ? "default"
-                        : "outline"
+                      wishlist.includes(Number(item.id)) ? "default" : "outline"
                     }
                     onClick={() => toggleWishlist(item.id, item.seller)}
+                    disabled={actionLoading[item.id]}
                   >
                     <Heart className="w-4 h-4 mr-1" />
-                    {wishlist.includes(Number(item.id))
-                      ? "Saved"
-                      : "Wishlist"}
+                    {wishlist.includes(Number(item.id)) ? "Saved" : "Wishlist"}
                   </Button>
 
                   <Button
-                    disabled={soldOut}
+                    disabled={soldOut || actionLoading[item.id]}
                     onClick={() => handleBuy(item)}
                   >
                     <ShoppingCart className="w-4 h-4 mr-1" />
@@ -264,12 +299,11 @@ export default function MarketplacePage() {
                 </CardFooter>
               </Card>
             );
-          })}
+          })
+        )}
       </div>
 
-      {/* =======================
-         Deposit Modal
-         ======================= */}
+      {/* Deposit Modal */}
       {showDepositModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-background p-6 rounded-xl w-96 space-y-4">

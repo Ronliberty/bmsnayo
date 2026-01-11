@@ -183,7 +183,7 @@ const FaqsSection: React.FC = () => {
             Still have questions? We're here to help.
           </p>
           <a
-            href="/contact"
+            href="#contact"
             className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-xl font-semibold hover:bg-primary/90 transition-all text-lg shadow-lg hover:shadow-xl"
           >
             Contact Support

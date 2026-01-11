@@ -203,11 +203,12 @@ export default function SellerUploadPage() {
 
           <div className="flex items-center gap-2">
             <input
+              id="active"
               type="checkbox"
               checked={active}
               onChange={() => setActive(!active)}
             />
-            <Label>Active</Label>
+            <Label htmlFor="active">Active</Label>
           </div>
 
           <Button onClick={submitItem} disabled={loading}>
