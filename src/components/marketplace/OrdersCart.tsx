@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 
 type OrdersCartProps = {
   count: number;
+  // the count function check it out
 };
 
 export function OrdersCart({ count }: OrdersCartProps) {
