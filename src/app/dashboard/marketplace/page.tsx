@@ -337,10 +337,6 @@
 //   );
 // }
 
-
-
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -429,27 +425,33 @@ export default function MarketplacePage() {
   /* =======================
      FETCH DATA
   ======================= */
-  useEffect(() => {
+  async function loadData() {
     if (!access) return;
-
-    Promise.all([
-      fetch(`${API_BASE}/market/items/`, {
-        headers: { Authorization: `Bearer ${access}` },
-      }).then((r) => r.json()),
-
-      fetch(`${API_BASE}/market/wishlist/`, {
-        headers: { Authorization: `Bearer ${access}` },
-      }).then((r) => r.json()),
-
-      fetch(`${API_BASE}/market/orders/?role=buyer`, {
-        headers: { Authorization: `Bearer ${access}` },
-      }).then((r) => r.json()),
-    ]).then(([itemsRes, wishlistRes, ordersRes]) => {
+    setLoading(true);
+    try {
+      const [itemsRes, wishlistRes, ordersRes] = await Promise.all([
+        fetch(`${API_BASE}/market/items/`, {
+          headers: { Authorization: `Bearer ${access}` },
+        }).then((r) => r.json()),
+        fetch(`${API_BASE}/market/wishlist/`, {
+          headers: { Authorization: `Bearer ${access}` },
+        }).then((r) => r.json()),
+        fetch(`${API_BASE}/market/orders/?role=buyer`, {
+          headers: { Authorization: `Bearer ${access}` },
+        }).then((r) => r.json()),
+      ]);
       setItems(itemsRes.results || []);
       setWishlist((wishlistRes.results || []).map((w: any) => w.item.id));
       setOrders(ordersRes.results || []);
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
       setLoading(false);
-    });
+    }
+  }
+
+  useEffect(() => {
+    loadData();
   }, [access]);
 
   /* =======================
@@ -486,19 +488,30 @@ export default function MarketplacePage() {
 
     setActionLoading((s) => ({ ...s, [item.id]: true }));
 
-    const res = await fetch(`${API_BASE}/market/orders/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${access}`,
-      },
-      body: JSON.stringify({ item_id: item.id, quantity }),
-    });
+    try {
+      const res = await fetch(`${API_BASE}/market/orders/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access}`,
+        },
+        body: JSON.stringify({ item_id: item.id, quantity }),
+      });
 
-    const data = await res.json();
-    refreshAccount();
-    setSuccessOrderId(data.id);
-    setActionLoading((s) => ({ ...s, [item.id]: false }));
+      if (!res.ok) {
+        throw new Error("Order failed");
+      }
+
+      const data = await res.json();
+      setSuccessOrderId(data.id);
+      await refreshAccount();
+      await loadData();  // Refetch to update availability and orders
+    } catch (error) {
+      console.error("Buy error:", error);
+      // Optionally show error toast/message
+    } finally {
+      setActionLoading((s) => ({ ...s, [item.id]: false }));
+    }
   }
 
   const filteredItems = items.filter((item) => {
@@ -653,15 +666,23 @@ export default function MarketplacePage() {
             <p className="text-sm">
               Your payment is secured in escrow.
             </p>
-            <Button
-              onClick={() =>
-                router.push(
-                  `/dashboard/marketplace/orders/${successOrderId}`
-                )
-              }
-            >
-              View order
-            </Button>
+            <div className="flex justify-center gap-4">
+              <Button
+                variant="outline"
+                onClick={() => setSuccessOrderId(null)}
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() =>
+                  router.push(
+                    `/dashboard/marketplace/orders/${successOrderId}`
+                  )
+                }
+              >
+                View order
+              </Button>
+            </div>
           </div>
         </div>
       )}
