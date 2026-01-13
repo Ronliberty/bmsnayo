@@ -102,7 +102,7 @@ const BlogsSection: React.FC = () => {
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">By {blogPosts[0].author}</span>
-                <Link href="/blog/secure-escrow-guide" className="text-primary font-medium hover:underline">
+                <Link href="/blog" className="text-primary font-medium hover:underline">
                   Read More →
                 </Link>
               </div>
