@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 /* ------------------ Types ------------------ */
 
@@ -35,6 +36,32 @@ type OrdersResponse = {
   results: Order[];
 };
 
+/* ------------------ Status → Badge Variant ------------------ */
+/**
+ * IMPORTANT:
+ * These variants MUST exist in badgeVariants (cva)
+ */
+function getOrderBadgeVariant(
+  status: OrderStatus
+): React.ComponentProps<typeof Badge>["variant"] {
+  switch (status) {
+    case "completed":
+      return "success";
+    case "pending":
+      return "warning";
+    case "cancelled":
+      return "destructive";
+    case "in_escrow":
+      return "outline";
+    default:
+      return "default";
+  }
+}
+
+function getOrderStatusLabel(status: OrderStatus) {
+  return status.replace("_", " ");
+}
+
 /* ------------------ Component ------------------ */
 
 export default function OrdersListPage() {
@@ -59,15 +86,11 @@ export default function OrdersListPage() {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/market/orders/`,
           {
-            headers: {
-              Authorization: `Bearer ${access}`,
-            },
+            headers: { Authorization: `Bearer ${access}` },
           }
         );
 
-        if (!res.ok) {
-          throw new Error("Failed to fetch orders");
-        }
+        if (!res.ok) throw new Error("Failed to fetch orders");
 
         const data: OrdersResponse = await res.json();
         setOrders(Array.isArray(data.results) ? data.results : []);
@@ -93,15 +116,11 @@ export default function OrdersListPage() {
         `${process.env.NEXT_PUBLIC_API_URL}/market/orders/${cancelOrderId}/cancel/`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${access}`,
-          },
+          headers: { Authorization: `Bearer ${access}` },
         }
       );
 
-      if (!res.ok) {
-        throw new Error("Failed to cancel order");
-      }
+      if (!res.ok) throw new Error("Failed to cancel order");
 
       setOrders((prev) =>
         prev.map((o) =>
@@ -110,8 +129,6 @@ export default function OrdersListPage() {
       );
 
       setSuccessMessage("Order cancelled successfully.");
-    } catch (e: any) {
-      alert(e.message || "Could not cancel order");
     } finally {
       setCancelLoading(false);
       setCancelOrderId(null);
@@ -175,19 +192,12 @@ export default function OrdersListPage() {
                   </div>
 
                   <div className="flex flex-col sm:items-end gap-2">
-                    <p
-                      className={`capitalize font-medium ${
-                        order.status === "completed"
-                          ? "text-green-600"
-                          : order.status === "pending"
-                          ? "text-yellow-600"
-                          : order.status === "cancelled"
-                          ? "text-red-600"
-                          : "text-blue-600"
-                      }`}
+                    <Badge
+                      variant={getOrderBadgeVariant(order.status)}
+                      className="capitalize"
                     >
-                      {order.status}
-                    </p>
+                      {getOrderStatusLabel(order.status)}
+                    </Badge>
 
                     {cancellable && (
                       <Button
