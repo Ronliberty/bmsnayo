@@ -5,11 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 const partners = [
-  {
-    name: "TechHub Africa",
-    logo: "https://via.placeholder.com/180x90/000000/FFFFFF?text=TechHub+Africa",
-    description: "Leading tech incubator supporting digital innovation across the continent",
-  },
+  
   {
     name: "Elante",
     logo: "https://via.placeholder.com/180x90/000000/FFFFFF?text=FreelancePro",
@@ -20,21 +16,7 @@ const partners = [
     logo: "https://via.placeholder.com/180x90/000000/FFFFFF?text=SkillForge",
     description: "Premier online learning partner for skill development and certification",
   },
-  {
-    name: "SecurePay Solutions",
-    logo: "https://via.placeholder.com/180x90/000000/FFFFFF?text=SecurePay",
-    description: "Blockchain-based payment infrastructure partner",
-  },
-  {
-    name: "Creative Collective",
-    logo: "https://via.placeholder.com/180x90/000000/FFFFFF?text=Creative+Collective",
-    description: "Community of digital creators and content professionals",
-  },
-  {
-    name: "BizGrowth Network",
-    logo: "https://via.placeholder.com/180x90/000000/FFFFFF?text=BizGrowth",
-    description: "Business development and networking alliance",
-  },
+  
 ];
 
 const PartnersSection: React.FC = () => {
@@ -120,7 +102,7 @@ const PartnersSection: React.FC = () => {
             Interested in partnering with Nayo?
           </p>
           <a
-            href="/contact"
+            href="#contact"
             className="inline-block bg-primary text-primary-foreground px-8 py-4 rounded-lg font-medium hover:bg-primary/90 transition text-lg"
           >
             Become a Partner

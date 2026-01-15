@@ -129,7 +129,7 @@ const PricingSection: React.FC = () => {
                 </ul>
 
                 <Link
-                  href="/signup"
+                  href="/dashboard/subscription"
                   className={`w-full block text-center py-3 px-6 rounded-md font-medium transition ${
                     plan.buttonVariant === 'default'
                       ? 'bg-primary text-primary-foreground hover:bg-primary/90'
