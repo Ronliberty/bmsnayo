@@ -11,39 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { Filter, X } from "lucide-react";
+import { Media, Topic, Article, getNewsArticles } from "@/lib/news/api";
 
-/* ---------------- Types ---------------- */
-type Media = {
-  file: string;
-  alt?: string | null;
-  caption?: string | null;
-};
-
-type Topic = {
-  id: number;
-  name: string;
-  slug: string;
-};
-
-type Article = {
-  id: string;
-  title: string;
-  url: string;
-  summary: string;
-  source: {
-    id: number;
-    name: string;
-    url: string;
-    reliability_score: number;
-  };
-  source_reliability_at_fetch: number;
-  topics: Topic[];
-  language: string;
-  region: string;
-  published_at: string;
-  is_featured: boolean;
-  media?: Media[];
-};
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -161,10 +130,8 @@ export default function DashboardPage() {
       setErr(null);
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/nayo/articles/`, {
-          headers: { Authorization: `Bearer ${access}` },
-        });
-        const data = await res.json();
+        
+       const data = await getNewsArticles(access);
         setArticles(Array.isArray(data.results) ? data.results : []);
       } catch (e: any) {
         setErr(e.message);

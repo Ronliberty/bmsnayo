@@ -17,37 +17,14 @@ import {
 } from "@/components/ui/dialog";
 import { Maximize2, Minimize2, Filter, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-
+import { getJobs, Job, Media, RemoteType } from "@/lib/job/api";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 function mediaUrl(path: string) {
   return new URL(path, API_BASE_URL).toString();
 }
 
-/* ---------------- Types ---------------- */
-type Media = {
-  id: string;
-  media_type: "image" | "video" | "file";
-  file: string;
-  caption?: string | null;
-};
 
-type RemoteType = "remote" | "hybrid" | "onsite";
-
-type Job = {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  description: string;
-  currency: string;
-  salary_min: number | null;
-  salary_max: number | null;
-  remote_type: RemoteType;
-  posted_at: string;
-  url: string;
-  media?: Media[];
-};
 
 /* ---------------- Helpers ---------------- */
 const getPrimaryMedia = (media?: Media[]) => media?.[0] || null;
@@ -240,17 +217,14 @@ export default function JobsPage() {
   useEffect(() => {
     if (!access) return;
 
-    fetch(`${API_BASE_URL}/api/nayo/jobs/`, {
-      headers: { Authorization: `Bearer ${access}` },
-    })
-      .then((r) => r.json())
-      .then((d) => setJobs(d.results || []));
-  }, [access]);
-
-  const locations = useMemo(
-    () => Array.from(new Set(jobs.map((j) => j.location))).sort(),
-    [jobs]
-  );
+    getJobs(access)
+          .then((data) => setJobs(data.results || []))
+          .catch((err) => console.error(err));
+      }, [access]);
+      const locations = useMemo(
+        () => Array.from(new Set(jobs.map((j) => j.location))).sort(),
+        [jobs]
+      );
 
   /* ---------------- Filtering Logic ---------------- */
   const filteredJobs = useMemo(() => {
