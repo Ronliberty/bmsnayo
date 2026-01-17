@@ -9,8 +9,11 @@ export const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 
 export interface Media {
-  file?: string;
-};
+  id: number;
+  file?: string | null;
+  link?: string | null;
+}
+
 
 export interface MarketplaceItem {
   id: string;
@@ -23,6 +26,7 @@ export interface MarketplaceItem {
   media?: Media[];
   availability_quantity: number;
   item_type: "service" | "app" | "website";
+  
 };
 
 export interface MarketplaceOrderItem {
@@ -156,6 +160,56 @@ export async function createOrder(
 }
 
 
+// export async function getOrders(
+//   accessToken: string
+// ): Promise<OrderType[]> {
+//   const res = await fetch(`${API_BASE}/market/orders/list/`, {
+//     method: "GET",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: `Bearer ${accessToken}`,
+//     },
+//     credentials: "include",
+//   });
+
+//   if (!res.ok) {
+//     const err = await res.json().catch(() => ({}));
+//     throw new Error(err?.detail || "Failed to fetch orders");
+//   }
+
+//   return res.json();
+// }
+
+export async function getOrders(
+  accessToken: string
+): Promise<OrderType[]> {
+  const res = await fetch(`${API_BASE}/market/orders/list/`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || "Failed to fetch orders");
+  }
+
+  const data = await res.json();
+
+  // ✅ Handle DRF pagination safely
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (Array.isArray(data.results)) {
+    return data.results;
+  }
+
+  throw new Error("Invalid orders response format");
+}
 
 
 
@@ -163,7 +217,7 @@ export async function getOrderById(
   accessToken: string,
   orderId: string | number
 ): Promise<OrderType> {
-  const res = await fetch(`${API_BASE}/market/orders/${orderId}/`, {
+  const res = await fetch(`${API_BASE}/market/order/${orderId}/`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

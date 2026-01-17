@@ -262,7 +262,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getOrderById, OrderType } from "@/lib/market/api"; // import your API function & type
+import { getOrders, OrderType } from "@/lib/market/api"; // import your API function & type
 
 export default function OrdersListPage() {
   const { access } = useAuth();
@@ -276,30 +276,26 @@ export default function OrdersListPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
 
-  useEffect(() => {
-    if (!access) return;
+useEffect(() => {
+  if (!access) {
+    setLoading(false);
+    return;
+  }
 
-    async function fetchOrders() {
-      try {
-        // Example: fetch first 10 orders by ID
-        const orderIds = [1, 2, 3, 4, 5]; // replace with real order IDs or pagination
-        const ordersFetched: OrderType[] = [];
-
-        for (const id of orderIds) {
-          const order = await getOrderById(access!, id);
-          ordersFetched.push(order);
-        }
-
-        setOrders(ordersFetched);
-      } catch (e: any) {
-        setErr(e.message || "Something went wrong");
-      } finally {
-        setLoading(false);
-      }
+  async function fetchOrders(accessToken: string) {
+    try {
+      const ordersFetched = await getOrders(accessToken);
+      setOrders(ordersFetched);
+    } catch (e: any) {
+      setErr(e.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
+  }
 
-    fetchOrders();
-  }, [access]);
+  fetchOrders(access);
+}, [access]);
+
 
   async function handleCancelOrder() {
     if (!cancelOrderId || !access) return;
