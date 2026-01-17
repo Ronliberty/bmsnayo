@@ -745,7 +745,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSearch } from "@/context/SearchContext";
 import { toast } from "sonner";
 import { BuyButton } from "@/components/marketplace/BuyButton";
-import { getMarketplaceItems, MarketplaceItem } from "@/lib/market/api";
+import { getMarketplaceItems, getWishlist, MarketplaceItem, toggleWishlistItem } from "@/lib/market/api";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 
@@ -768,55 +768,58 @@ export default function MarketplacePage() {
   /* =======================
      Fetch items + wishlist
      ======================= */
-  useEffect(() => {
-    if (!access) return;
-    
+useEffect(() => {
+  if (!access) return;
 
-    Promise.all([
-       getMarketplaceItems(access),
-      fetch(`${API_BASE}/market/wishlist/`, {
-        headers: { Authorization: `Bearer ${access}` },
-      }).then((r) => r.json()),
-    ])
-      .then(([itemsRes, wishlistRes]) => {
-        setItems(itemsRes.results || []);
-        setWishlist((wishlistRes.results || []).map((w: any) => w.item.id));
-      })
-      .finally(() => setLoading(false));
-  }, [access]);
+  const token = access; // now token is type string, not string | null
 
-  /* =======================
-     REST-safe Wishlist
-     ======================= */
-  async function toggleWishlist(item: MarketplaceItem) {
-    if (!access || item.seller === user?.id) return;
-
-    const id = Number(item.id);
-    const saved = wishlist.includes(id);
-
-    setActionLoading((s) => ({ ...s, [item.id]: true }));
-
+  async function loadMarket() {
+    setLoading(true);
     try {
-      await fetch(`${API_BASE}/market/wishlist/`, {
-        method: saved ? "DELETE" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${access}`,
-        },
-        body: JSON.stringify({ item_id: item.id }),
-      });
+      const [itemsRes, wishlistRes] = await Promise.all([
+        getMarketplaceItems(token),
+        getWishlist(token),
+      ]);
 
-      setWishlist((prev) =>
-        saved ? prev.filter((x) => x !== id) : [...prev, id]
-      );
-
-      toast.success(saved ? "Removed from wishlist" : "Added to wishlist");
-    } catch {
-      toast.error("Wishlist action failed");
+      setItems(itemsRes.results || []);
+      setWishlist((wishlistRes.results || []).map((w: any) => w.item.id));
+    } catch (err) {
+      console.error("Failed to load market or wishlist:", err);
     } finally {
-      setActionLoading((s) => ({ ...s, [item.id]: false }));
+      setLoading(false);
     }
   }
+
+  loadMarket();
+}, [access]);
+
+/* =======================
+   REST-safe Wishlist
+   ======================= */
+async function toggleWishlist(item: MarketplaceItem) {
+  if (!access || item.seller === user?.id) return;
+
+  const id = Number(item.id);
+  const saved = wishlist.includes(id);
+
+  setActionLoading((s) => ({ ...s, [id]: true }));
+
+  try {
+    await toggleWishlistItem(access, item, saved); // use centralized API
+
+    // Update local state
+    setWishlist((prev) =>
+      saved ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+
+    toast.success(saved ? "Removed from wishlist" : "Added to wishlist");
+  } catch {
+    toast.error("Wishlist action failed");
+  } finally {
+    setActionLoading((s) => ({ ...s, [id]: false }));
+  }
+}
+
 
   const filteredItems = items.filter((item) => {
     if (!searchQuery.trim()) return true;
