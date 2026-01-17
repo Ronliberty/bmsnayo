@@ -878,7 +878,7 @@ async function toggleWishlist(item: MarketplaceItem) {
               <div className="h-40 bg-muted">
                 {item.media?.length ? (
                   <img
-                    src={mediaUrl(item.media[0].file)}
+                    src={mediaUrl(item.media[0].file ?? "placeholder.png")}
                     className="h-full w-full object-cover"
                   />
                 ) : (
