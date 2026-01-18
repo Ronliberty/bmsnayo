@@ -61,6 +61,27 @@ export interface OrderType {
   items: OrderItemType[];
 }
 
+
+
+export interface OrderItemDelivery {
+  id: number;
+  order_item: number;
+  seller: string; // maybe seller username
+  delivered_quantity: number;
+  file?: string;
+  repo_url?: string;
+  message: string;
+  submitted_at: string;
+}
+
+export interface SubmitDeliveryPayload {
+  delivered_quantity: number;
+  file?: File;
+  repo_url?: string;
+  message?: string;
+}
+
+
 export async function fetchCurrentUser() {
   const res = await axios.get("/api/user/me/");
   return res.data; // { id, email, first_name, last_name, user_type }
@@ -229,6 +250,88 @@ export async function getOrderById(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.detail || "Failed to fetch order");
+  }
+
+  return res.json();
+}
+
+
+
+
+export async function cancelOrder(
+  accessToken: string,
+  orderId: string
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE}/market/order/${orderId}/cancel/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || "Failed to cancel order");
+  }
+
+  return res.json();
+}
+
+
+
+
+export async function getOrderItemDeliveries(
+  accessToken: string,
+  orderItemId: number
+): Promise<OrderItemDelivery[]> {
+  const res = await fetch(`${API_BASE}/market/order-items/${orderItemId}/deliveries/`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || "Failed to fetch deliveries");
+  }
+
+  return res.json();
+}
+
+
+
+export async function submitOrderItemDelivery(
+  accessToken: string,
+  orderItemId: number,
+  data: SubmitDeliveryPayload
+): Promise<OrderItemDelivery> {
+  const formData = new FormData();
+  formData.append("delivered_quantity", data.delivered_quantity.toString());
+  if (data.file) formData.append("file", data.file);
+  if (data.repo_url) formData.append("repo_url", data.repo_url);
+  if (data.message) formData.append("message", data.message);
+
+  const res = await fetch(
+    `${API_BASE}/market/order-items/${orderItemId}/deliveries/submit/`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        // Note: Don't set Content-Type, let browser handle FormData
+      },
+      body: formData,
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || "Failed to submit delivery");
   }
 
   return res.json();

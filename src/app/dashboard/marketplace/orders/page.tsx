@@ -262,7 +262,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getOrders, OrderType } from "@/lib/market/api"; // import your API function & type
+import { cancelOrder, getOrders, OrderType } from "@/lib/market/api"; // import your API function & type
 
 export default function OrdersListPage() {
   const { access } = useAuth();
@@ -297,40 +297,31 @@ useEffect(() => {
 }, [access]);
 
 
-  async function handleCancelOrder() {
-    if (!cancelOrderId || !access) return;
+async function handleCancelOrder() {
+  if (!cancelOrderId || !access) return;
 
-    try {
-      setCancelLoading(true);
+  try {
+    setCancelLoading(true);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/market/orders/${cancelOrderId}/cancel/`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${access}`,
-          },
-        }
-      );
+    // ✅ Use the typed API function
+    const data = await cancelOrder(access, cancelOrderId);
 
-      if (!res.ok) {
-        throw new Error("Failed to cancel order");
-      }
+    // Update local state
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === cancelOrderId ? { ...o, status: "cancelled" } : o
+      )
+    );
 
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === cancelOrderId ? { ...o, status: "cancelled" } : o
-        )
-      );
-
-      setSuccessMessage("Order cancelled successfully.");
-    } catch (e: any) {
-      alert(e.message || "Could not cancel order");
-    } finally {
-      setCancelLoading(false);
-      setCancelOrderId(null);
-    }
+    setSuccessMessage(data.message); // "Order cancelled successfully."
+  } catch (e: any) {
+    alert(e.message || "Could not cancel order");
+  } finally {
+    setCancelLoading(false);
+    setCancelOrderId(null);
   }
+}
+
 
   if (loading) {
     return <p className="p-6 text-muted-foreground">Loading orders...</p>;

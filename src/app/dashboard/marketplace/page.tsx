@@ -745,7 +745,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSearch } from "@/context/SearchContext";
 import { toast } from "sonner";
 import { BuyButton } from "@/components/marketplace/BuyButton";
-import { getMarketplaceItems, getWishlist, MarketplaceItem, toggleWishlistItem } from "@/lib/market/api";
+import { getMarketplaceItems, getOrders, getWishlist, MarketplaceItem, toggleWishlistItem } from "@/lib/market/api";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 
@@ -768,30 +768,82 @@ export default function MarketplacePage() {
   /* =======================
      Fetch items + wishlist
      ======================= */
-useEffect(() => {
-  if (!access) return;
+// useEffect(() => {
+//   if (!access) return;
 
-  const token = access; // now token is type string, not string | null
+//   const token = access; // now token is type string, not string | null
+
+//   async function loadMarket() {
+//     setLoading(true);
+//     try {
+//       const [itemsRes, wishlistRes] = await Promise.all([
+//         getMarketplaceItems(token),
+//         getWishlist(token),
+//       ]);
+
+//       setItems(itemsRes.results || []);
+//       setWishlist((wishlistRes.results || []).map((w: any) => w.item.id));
+//     } catch (err) {
+//       console.error("Failed to load market or wishlist:", err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   }
+
+//   loadMarket();
+// }, [access]);
+
+useEffect(() => {
+  if (!access) return; // make sure we have the token
+
+  const token = access; // string type, TS safe
+  let intervalId: number;
 
   async function loadMarket() {
     setLoading(true);
     try {
-      const [itemsRes, wishlistRes] = await Promise.all([
+      // Fetch marketplace items, wishlist, and orders in parallel
+      const [itemsRes, wishlistRes, ordersRes] = await Promise.all([
         getMarketplaceItems(token),
         getWishlist(token),
+        getOrders(token), // returns OrderType[]
       ]);
 
+      // Set marketplace items
       setItems(itemsRes.results || []);
+
+      // Set wishlist (extract item IDs)
       setWishlist((wishlistRes.results || []).map((w: any) => w.item.id));
+
+      // Set orders count safely
+      setOrdersCount(ordersRes.length);
     } catch (err) {
-      console.error("Failed to load market or wishlist:", err);
+      console.error("Failed to load market, wishlist, or orders:", err);
     } finally {
       setLoading(false);
     }
   }
 
+  // Initial load
   loadMarket();
+
+  // Refresh orders count every 30 seconds
+  intervalId = window.setInterval(async () => {
+    try {
+      const ordersRes = await getOrders(token);
+      setOrdersCount(ordersRes.length);
+    } catch (err) {
+      console.error("Failed to refresh orders count:", err);
+    }
+  }, 30_000);
+
+  // Cleanup interval when component unmounts
+  return () => clearInterval(intervalId);
 }, [access]);
+
+
+
+
 
 /* =======================
    REST-safe Wishlist
