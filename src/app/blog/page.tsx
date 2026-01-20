@@ -120,6 +120,10 @@ export default function BlogPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {blogPosts.map((post) => (
+              <Link 
+                key={post.id}
+                href={`/blog/${post.slug}`}
+                className='group block'>
               <article
                 key={post.id}
                 className="group bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
@@ -139,9 +143,9 @@ export default function BlogPage() {
 
                 <div className="p-6 flex flex-col flex-grow">
                   <h2 className="text-xl font-bold text-foreground mb-3 line-clamp-2 group-hover:text-primary transition-colors">
-                    <Link href={`/blog/${post.slug}`}>
+                   
                       {post.title}
-                    </Link>
+              
                   </h2>
 
                   <p className="text-muted-foreground mb-6 line-clamp-3 flex-grow">
@@ -166,6 +170,7 @@ export default function BlogPage() {
                   </div>
                 </div>
               </article>
+              </Link>
             ))}
           </div>
 
@@ -175,6 +180,7 @@ export default function BlogPage() {
             </button>
           </div>
         </div>
+        
       </section>
     </div>
   );

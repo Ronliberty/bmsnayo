@@ -33,7 +33,24 @@ const blogPosts: BlogPost[] = [
     image: "https://images.unsplash.com/photo-1563986768609-620da13593e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",
     slug: "secure-escrow-2026",
   },
-  // Add other posts similarly...
+  {
+    title: "Top 10 In-Demand Skills for Freelancers This Year",
+    content: `
+      <p>Escrow has evolved significantly in recent years...</p>
+      <h2>What is Escrow?</h2>
+      <p>Escrow is a financial arrangement...</p>
+      <h2>How Nayo Implements Escrow</h2>
+      <p>Our system is designed with...</p>
+      <!-- Add full article content here -->
+    `,
+    author: "Nayo Team",
+    date: "January 5, 2026",
+    readTime: "6 min read",
+    category: "Security",
+    image: "https://images.unsplash.com/photo-1563986768609-620da13593e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",
+    slug: "top-skills-2026",
+  },
+
 ];
 
 export async function generateStaticParams() {
