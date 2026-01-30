@@ -262,7 +262,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { cancelOrder, getOrders, OrderType } from "@/lib/market/api"; // import your API function & type
+import { cancelOrder, getBuyerOrders, OrderType } from "@/lib/market/api"; // import your API function & type
 
 export default function OrdersListPage() {
   const { access } = useAuth();
@@ -284,7 +284,7 @@ useEffect(() => {
 
   async function fetchOrders(accessToken: string) {
     try {
-      const ordersFetched = await getOrders(accessToken);
+      const ordersFetched = await getBuyerOrders(accessToken);
       setOrders(ordersFetched);
     } catch (e: any) {
       setErr(e.message || "Something went wrong");
@@ -367,9 +367,9 @@ async function handleCancelOrder() {
                     }
                   >
                     <p className="font-semibold truncate">#{order.id}</p>
-                    <p className="truncate">{order.items[0]?.item.title}</p>
+                    <p className="truncate">{order.items[0]?.marketplace_item.title}</p>
                     <p className="text-sm text-muted-foreground truncate">
-                      {order.items[0]?.item.seller_name}
+                      {order.items[0]?.marketplace_item.seller_name}
                     </p>
                   </div>
 

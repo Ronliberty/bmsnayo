@@ -37,12 +37,7 @@ export function MobileNav({
       href: "/dashboard/marketplace",
       icon: Store,
     },
-    {
-      name: "Analytics",
-      href: "/dashboard/finance",
-      icon: BarChart2,
-      restricted: !isSubscribed,
-    },
+    
     {
       name: "Partnerships",
       href: "/dashboard/partnerships",

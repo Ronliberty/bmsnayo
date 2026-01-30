@@ -454,8 +454,8 @@ import {
 } from "lucide-react";
 
 import {
-  getOrders,
-  getOrderItemDeliveries,
+  getSellerOrders,
+  getSellerDeliveries,
   submitOrderItemDelivery,
   OrderType,
   OrderItemType,
@@ -478,6 +478,8 @@ export default function SellerOrdersPage() {
 
   const [message, setMessage] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
+  const [loginDetails, setLoginDetails] = useState("");
+
   const [file, setFile] = useState<File | null>(null);
   const [deliveredQty, setDeliveredQty] = useState<number>(1);
 
@@ -493,7 +495,7 @@ export default function SellerOrdersPage() {
 
     setLoading(true);
     try {
-      const data = await getOrders(access);
+      const data = await getSellerOrders(access);
       setOrders(data);
     } catch (err) {
       console.error(err);
@@ -534,32 +536,35 @@ export default function SellerOrdersPage() {
      Submit Delivery
   ======================= */
 
-  async function handleSubmitDelivery() {
-    if (!access || !activeOrderItem) return;
+async function handleSubmitDelivery() {
+  if (!access || !activeOrderItem) return;
 
-    try {
-      await submitOrderItemDelivery(
-  access,
-  Number(activeOrderItem.id),
-  {
-    delivered_quantity: deliveredQty,
-    message,
-    repo_url: repoUrl || undefined,
-    file: file || undefined,
+  try {
+    await submitOrderItemDelivery(
+      access,
+      Number(activeOrderItem.order_item_id),
+      {
+        delivered_quantity: deliveredQty,
+        message,
+        repo_url: repoUrl || undefined,
+        file: file || undefined,
+        login_details: loginDetails || undefined, // ✅ add this
+      }
+    );
+
+    // Reset form fields
+    setActiveOrderItem(null);
+    setMessage("");
+    setRepoUrl("");
+    setFile(null);
+    setDeliveredQty(1);
+    setLoginDetails(""); // ✅ reset login details
+
+    loadOrders();
+  } catch (err: any) {
+    alert(err.message || "Delivery failed");
   }
-);
-
-      setActiveOrderItem(null);
-      setMessage("");
-      setRepoUrl("");
-      setFile(null);
-      setDeliveredQty(1);
-
-      loadOrders();
-    } catch (err: any) {
-      alert(err.message || "Delivery failed");
-    }
-  }
+}
 
   /* =======================
      View Deliveries
@@ -569,7 +574,7 @@ export default function SellerOrdersPage() {
     if (!access) return;
 
     try {
-      const data = await getOrderItemDeliveries(access, Number(orderItem.id));
+      const data = await getSellerDeliveries(access, Number(orderItem.order_item_id));
       setViewDeliveries(data);
     } catch (err: any) {
       alert(err.message || "Failed to load deliveries");
@@ -618,8 +623,9 @@ export default function SellerOrdersPage() {
 
             <CardContent className="space-y-4">
               {order.items.map((item) => (
-                <div key={item.id} className="border rounded p-4 space-y-2">
-                  <div className="font-medium">{item.item.title}</div>
+                <div key={item.order_item_id} className="border rounded p-4 space-y-2">
+                 <div className="font-medium">{item.marketplace_item.title}</div>
+
                   <div className="text-sm text-muted-foreground">
                     Qty: {item.quantity} • Delivered: {item.delivered_quantity}
                   </div>
@@ -683,6 +689,10 @@ export default function SellerOrdersPage() {
               <Label>File</Label>
               <Input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
             </div>
+            <div>
+            <Label>Login Details</Label>
+            <Textarea value={loginDetails} onChange={(e) => setLoginDetails(e.target.value)} />
+          </div>
           </div>
 
           <DialogFooter>

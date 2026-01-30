@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { rejectDelivery, RejectDeliveryPayload } from "@/lib/market/api";
 
 type RejectOrderProps = {
-  orderId: string;
+  deliveryId: number; // ✅ change from orderId to deliveryId
   onClose: () => void;
 };
 
-export default function RejectOrder({ orderId, onClose }: RejectOrderProps) {
+export default function RejectOrder({ deliveryId, onClose }: RejectOrderProps) {
   const { access } = useAuth();
-  const [category, setCategory] = useState("other");
+  const [category, setCategory] = useState<RejectDeliveryPayload["category"]>("other");
   const [reason, setReason] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -25,26 +25,17 @@ export default function RejectOrder({ orderId, onClose }: RejectOrderProps) {
       setSubmitting(true);
       setFeedback(null);
 
-      const formData = new FormData();
-      formData.append("category", category);
-      if (reason) formData.append("reason", reason);
-      if (file) formData.append("evidence_file", file);
-
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/market/orders/${orderId}/reject/`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${access}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      await rejectDelivery(access, {
+      delivery_id: deliveryId, // pass deliveryId inside payload
+      category,
+      reason,
+      evidence_file: file,
+    });
 
       setFeedback("Delivery rejected and dispute opened ✅");
-      setTimeout(() => onClose(), 1200); // close after success
+      setTimeout(onClose, 1200); // auto-close
     } catch (err: any) {
-      setFeedback(err.response?.data?.detail || "Something went wrong ❌");
+      setFeedback(err.message || "Something went wrong ❌");
     } finally {
       setSubmitting(false);
     }
@@ -62,7 +53,7 @@ export default function RejectOrder({ orderId, onClose }: RejectOrderProps) {
             <select
               className="w-full border rounded p-2 mt-1"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => setCategory(e.target.value as RejectDeliveryPayload["category"])}
             >
               <option value="not_received">Did not receive work</option>
               <option value="not_as_described">Work not as described</option>
@@ -91,19 +82,14 @@ export default function RejectOrder({ orderId, onClose }: RejectOrderProps) {
             />
           </div>
 
-          {feedback && (
-            <p className="text-sm text-center text-green-600">{feedback}</p>
-          )}
+          {feedback && <p className="text-sm text-center text-green-600">{feedback}</p>}
         </CardContent>
+
         <CardFooter className="flex justify-end gap-3">
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button
-            variant="destructive"
-            onClick={handleSubmit}
-            disabled={submitting}
-          >
+          <Button variant="destructive" onClick={handleSubmit} disabled={submitting}>
             Submit Rejection
           </Button>
         </CardFooter>

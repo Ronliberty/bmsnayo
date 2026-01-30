@@ -745,7 +745,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSearch } from "@/context/SearchContext";
 import { toast } from "sonner";
 import { BuyButton } from "@/components/marketplace/BuyButton";
-import { getMarketplaceItems, getOrders, getWishlist, MarketplaceItem, toggleWishlistItem } from "@/lib/market/api";
+import { getMarketplaceItems, getBuyerOrders, getWishlist, MarketplaceItem, toggleWishlistItem } from "@/lib/market/api";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 
@@ -806,7 +806,7 @@ useEffect(() => {
       const [itemsRes, wishlistRes, ordersRes] = await Promise.all([
         getMarketplaceItems(token),
         getWishlist(token),
-        getOrders(token), // returns OrderType[]
+        getBuyerOrders(token), // returns OrderType[]
       ]);
 
       // Set marketplace items
@@ -830,7 +830,7 @@ useEffect(() => {
   // Refresh orders count every 30 seconds
   intervalId = window.setInterval(async () => {
     try {
-      const ordersRes = await getOrders(token);
+      const ordersRes = await getBuyerOrders(token);
       setOrdersCount(ordersRes.length);
     } catch (err) {
       console.error("Failed to refresh orders count:", err);

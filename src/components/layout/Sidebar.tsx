@@ -137,7 +137,7 @@ export function Sidebar({
     "/dashboard",
     "/dashboard/jobs",
     "/dashboard/marketplace",
-    "/dashboard/finance",
+    
     "/dashboard/partnerships",
   ];
 

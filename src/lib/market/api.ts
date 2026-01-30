@@ -42,9 +42,18 @@ export interface CreateOrderResponse {
 }
 
 
+// export interface OrderItemType {
+//   id: string;
+//   item: MarketplaceItem;
+//   quantity: number;
+//   delivered_quantity: number;
+//   price: number;
+//   status: string;
+// }
+
 export interface OrderItemType {
-  id: string;
-  item: MarketplaceItem;
+  order_item_id: number;
+  marketplace_item: MarketplaceItem;
   quantity: number;
   delivered_quantity: number;
   price: number;
@@ -66,19 +75,28 @@ export interface OrderType {
 export interface OrderItemDelivery {
   id: number;
   order_item: number;
-  seller: string; // maybe seller username
+  seller: string; // seller username or id
   delivered_quantity: number;
   file?: string;
   repo_url?: string;
   message: string;
+  login_details?: string; // ✅ ADD THIS
   submitted_at: string;
 }
+
 
 export interface SubmitDeliveryPayload {
   delivered_quantity: number;
   file?: File;
   repo_url?: string;
   message?: string;
+  login_details?: string; // ✅ add this
+}
+
+export interface RejectDeliveryPayload {
+  category: "not_received" | "not_as_described" | "poor_quality" | "late_delivery" | "other";
+  reason?: string;
+  evidence_file?: File | null;
 }
 
 
@@ -201,35 +219,85 @@ export async function createOrder(
 //   return res.json();
 // }
 
-export async function getOrders(
+// export async function getOrders(
+//   accessToken: string
+// ): Promise<OrderType[]> {
+//   const res = await fetch(`${API_BASE}/market/orders/list/`, {
+//     method: "GET",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: `Bearer ${accessToken}`,
+//     },
+//     credentials: "include",
+//   });
+
+//   if (!res.ok) {
+//     const err = await res.json().catch(() => ({}));
+//     throw new Error(err?.detail || "Failed to fetch orders");
+//   }
+
+//   const data = await res.json();
+
+//   // ✅ Handle DRF pagination safely
+//   if (Array.isArray(data)) {
+//     return data;
+//   }
+
+//   if (Array.isArray(data.results)) {
+//     return data.results;
+//   }
+
+//   throw new Error("Invalid orders response format");
+// }
+
+
+export async function getBuyerOrders(
   accessToken: string
 ): Promise<OrderType[]> {
-  const res = await fetch(`${API_BASE}/market/orders/list/`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-    },
-    credentials: "include",
-  });
+  const res = await fetch(
+    `${API_BASE}/market/orders/list/?role=buyer`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      credentials: "include",
+    }
+  );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err?.detail || "Failed to fetch orders");
+    throw new Error(err?.detail || "Failed to fetch buyer orders");
   }
 
   const data = await res.json();
+  return Array.isArray(data) ? data : data.results;
+}
 
-  // ✅ Handle DRF pagination safely
-  if (Array.isArray(data)) {
-    return data;
+
+export async function getSellerOrders(
+  accessToken: string
+): Promise<OrderType[]> {
+  const res = await fetch(
+    `${API_BASE}/market/orders/list/?role=seller`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || "Failed to fetch seller orders");
   }
 
-  if (Array.isArray(data.results)) {
-    return data.results;
-  }
-
-  throw new Error("Invalid orders response format");
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.results;
 }
 
 
@@ -280,28 +348,49 @@ export async function cancelOrder(
 }
 
 
+// export async function getOrderItemDeliveries(
+//   accessToken: string,
+//   orderItemId: number
+// ): Promise<OrderItemDelivery[]> {
+//   try {
+//     const res = await axios.get<OrderItemDelivery[]>(
+//       `${API_BASE}/market/order-items/${orderItemId}/deliveries/`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${accessToken}`,
+//           "Content-Type": "application/json",
+//         },
+//         withCredentials: true, // equivalent to fetch's credentials: "include"
+//       }
+//     );
+//     return res.data;
+//   } catch (err: any) {
+//     throw new Error(
+//       err.response?.data?.detail || err.message || "Failed to fetch deliveries"
+//     );
+//   }
+// }
 
+// export async function getOrderItemDeliveries(
+//   accessToken: string,
+//   orderItemId: number
+// ): Promise<OrderItemDelivery[]> {
+//   const res = await fetch(`${API_BASE}/market/order-items/${orderItemId}/deliveries/`, {
+//     method: "GET",
+//     headers: {
+//       Authorization: `Bearer ${accessToken}`,
+//       "Content-Type": "application/json",
+//     },
+//     credentials: "include",
+//   });
 
-export async function getOrderItemDeliveries(
-  accessToken: string,
-  orderItemId: number
-): Promise<OrderItemDelivery[]> {
-  const res = await fetch(`${API_BASE}/market/order-items/${orderItemId}/deliveries/`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  });
+//   if (!res.ok) {
+//     const err = await res.json().catch(() => ({}));
+//     throw new Error(err?.detail || "Failed to fetch deliveries");
+//   }
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.detail || "Failed to fetch deliveries");
-  }
-
-  return res.json();
-}
+//   return res.json();
+// }
 
 
 
@@ -315,6 +404,7 @@ export async function submitOrderItemDelivery(
   if (data.file) formData.append("file", data.file);
   if (data.repo_url) formData.append("repo_url", data.repo_url);
   if (data.message) formData.append("message", data.message);
+  if (data.login_details) formData.append("login_details", data.login_details); // ✅ add login_details
 
   const res = await fetch(
     `${API_BASE}/market/order-items/${orderItemId}/deliveries/submit/`,
@@ -322,10 +412,9 @@ export async function submitOrderItemDelivery(
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        // Note: Don't set Content-Type, let browser handle FormData
       },
       body: formData,
-      credentials: "include",
+      // remove credentials for token auth
     }
   );
 
@@ -335,4 +424,127 @@ export async function submitOrderItemDelivery(
   }
 
   return res.json();
+}
+
+
+
+export async function getBuyerDeliveries(
+  accessToken: string,
+  orderItemId: number
+): Promise<OrderItemDelivery[]> {
+  const res = await fetch(
+    `${API_BASE}/market/order-items/${orderItemId}/deliveries/?role=buyer`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || "Failed to fetch buyer deliveries");
+  }
+
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.results;
+}
+
+export async function getSellerDeliveries(
+  accessToken: string,
+  orderItemId: number
+): Promise<OrderItemDelivery[]> {
+  const res = await fetch(
+    `${API_BASE}/market/order-items/${orderItemId}/deliveries/?role=seller`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || "Failed to fetch seller deliveries");
+  }
+
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.results;
+}
+
+
+
+// export async function rejectDelivery(
+//   accessToken: string,
+//   deliveryId: number,
+//   payload: RejectDeliveryPayload
+// ): Promise<{ detail: string }> {
+//   try {
+//     const formData = new FormData();
+
+//     formData.append("category", payload.category);
+//     if (payload.reason) formData.append("reason", payload.reason);
+//     if (payload.evidence_file) formData.append("evidence_file", payload.evidence_file);
+
+//     const res = await axios.post(`${API_BASE}/market/deliveries/${deliveryId}/reject/`, formData, {
+//       headers: {
+//         Authorization: `Bearer ${accessToken}`,
+//         "Content-Type": "multipart/form-data",
+//       },
+//       withCredentials: true,
+//     });
+
+//     return res.data;
+//   } catch (err: any) {
+//     throw new Error(err.response?.data?.detail || err.message || "Failed to reject delivery");
+//   }
+// }
+
+
+
+
+// lib/market/api.ts
+
+
+export interface RejectDeliveryPayload {
+  category: "not_received" | "not_as_described" | "poor_quality" | "late_delivery" | "other";
+  reason?: string;
+  evidence_file?: File | null;
+  delivery_id?: number;
+  order_item_id?: number;
+  order_id?: number;
+}
+
+export async function rejectDelivery(
+  accessToken: string,
+  payload: RejectDeliveryPayload
+): Promise<{ detail: string }> {
+  try {
+    const formData = new FormData();
+
+    if (payload.category) formData.append("category", payload.category);
+    if (payload.reason) formData.append("reason", payload.reason);
+    if (payload.evidence_file) formData.append("evidence_file", payload.evidence_file);
+    if (payload.delivery_id) formData.append("delivery_id", String(payload.delivery_id));
+    if (payload.order_item_id) formData.append("order_item_id", String(payload.order_item_id));
+    if (payload.order_id) formData.append("order_id", String(payload.order_id));
+
+    const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/market/disputes/reject/`, formData, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "multipart/form-data",
+      },
+      withCredentials: true,
+    });
+
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.detail || err.message || "Failed to reject");
+  }
 }
