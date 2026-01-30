@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { rejectDelivery, RejectDeliveryPayload } from "@/lib/market/api";
+import { createDispute, RejectDeliveryPayload } from "@/lib/market/api";
 
 type RejectOrderProps = {
   deliveryId: number; // ✅ change from orderId to deliveryId
@@ -25,7 +25,7 @@ export default function RejectOrder({ deliveryId, onClose }: RejectOrderProps) {
       setSubmitting(true);
       setFeedback(null);
 
-      await rejectDelivery(access, {
+      await createDispute(access, {
       delivery_id: deliveryId, // pass deliveryId inside payload
       category,
       reason,

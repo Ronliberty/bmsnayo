@@ -72,6 +72,19 @@ export interface OrderType {
 
 
 
+// export interface OrderItemDelivery {
+//   id: number;
+//   order_item: number;
+//   seller: string; // seller username or id
+//   delivered_quantity: number;
+//   file?: string;
+//   repo_url?: string;
+//   message: string;
+//   login_details?: string; // ✅ ADD THIS
+//   submitted_at: string;
+//   status: "pending" | "partial" | "delivered";
+// }
+
 export interface OrderItemDelivery {
   id: number;
   order_item: number;
@@ -82,8 +95,11 @@ export interface OrderItemDelivery {
   message: string;
   login_details?: string; // ✅ ADD THIS
   submitted_at: string;
+  status: "pending" | "partial" | "delivered" | "disputed"; // ✅ fixed
+  dispute?: {
+    id: number;
+  }; // optional, for dispute chat
 }
-
 
 export interface SubmitDeliveryPayload {
   delivered_quantity: number;
@@ -512,39 +528,119 @@ export async function getSellerDeliveries(
 // lib/market/api.ts
 
 
-export interface RejectDeliveryPayload {
-  category: "not_received" | "not_as_described" | "poor_quality" | "late_delivery" | "other";
+export type DisputeCategory =
+  | "not_received"
+  | "not_as_described"
+  | "poor_quality"
+  | "late_delivery"
+  | "other";
+
+export interface DisputeCreatePayload {
+  category: DisputeCategory;
   reason?: string;
   evidence_file?: File | null;
-  delivery_id?: number;
-  order_item_id?: number;
+
   order_id?: number;
+  order_item_id?: number;
+  delivery_id?: number;
 }
 
-export async function rejectDelivery(
+
+export async function createDispute(
   accessToken: string,
-  payload: RejectDeliveryPayload
-): Promise<{ detail: string }> {
-  try {
-    const formData = new FormData();
+  payload: DisputeCreatePayload
+): Promise<{ detail: string; dispute_id: number }> {
+  const targets = [
+    payload.order_id,
+    payload.order_item_id,
+    payload.delivery_id,
+  ].filter(Boolean);
 
-    if (payload.category) formData.append("category", payload.category);
-    if (payload.reason) formData.append("reason", payload.reason);
-    if (payload.evidence_file) formData.append("evidence_file", payload.evidence_file);
-    if (payload.delivery_id) formData.append("delivery_id", String(payload.delivery_id));
-    if (payload.order_item_id) formData.append("order_item_id", String(payload.order_item_id));
-    if (payload.order_id) formData.append("order_id", String(payload.order_id));
+  if (targets.length !== 1) {
+    throw new Error("Exactly one dispute target must be provided.");
+  }
 
-    const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/market/disputes/reject/`, formData, {
+  const formData = new FormData();
+
+  formData.append("category", payload.category);
+
+  if (payload.reason) formData.append("reason", payload.reason);
+  if (payload.evidence_file) formData.append("evidence_file", payload.evidence_file);
+  if (payload.order_id) formData.append("order_id", String(payload.order_id));
+  if (payload.order_item_id) formData.append("order_item_id", String(payload.order_item_id));
+  if (payload.delivery_id) formData.append("delivery_id", String(payload.delivery_id));
+
+  const res = await axios.post(
+    `${process.env.NEXT_PUBLIC_API_URL}/market/disputes/create/`,
+    formData,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      withCredentials: true,
+    }
+  );
+
+  return res.data;
+}
+
+
+
+
+export type DisputeMessage = {
+  id: number;
+  sender_role: "buyer" | "seller";
+  sender_name: string;
+  message: string;
+  attachment?: string | null;
+  created_at: string;
+};
+
+export type CreateDisputeMessagePayload = {
+  message?: string;
+  attachment?: File | null;
+};
+
+
+
+export async function fetchDisputeMessages(
+  accessToken: string,
+  disputeId: number
+): Promise<DisputeMessage[]> {
+  const res = await axios.get(
+    `${process.env.NEXT_PUBLIC_API_URL}/market/disputes/${disputeId}/messages/`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      withCredentials: true,
+    }
+  );
+  return res.data;
+}
+
+export async function postDisputeMessage(
+  accessToken: string,
+  disputeId: number,
+  payload: CreateDisputeMessagePayload
+): Promise<DisputeMessage> {
+  const formData = new FormData();
+  if (payload.message) formData.append("message", payload.message);
+  if (payload.attachment) formData.append("attachment", payload.attachment);
+
+  const res = await axios.post(
+    `${process.env.NEXT_PUBLIC_API_URL}/market/disputes/${disputeId}/messages/`,
+    formData,
+    {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "multipart/form-data",
       },
       withCredentials: true,
-    });
+    }
+  );
 
-    return res.data;
-  } catch (err: any) {
-    throw new Error(err.response?.data?.detail || err.message || "Failed to reject");
-  }
+  return res.data;
 }
+
+
