@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { fetchDisputeMessages, postDisputeMessage } from "@/lib/market/api";
-import { DisputeMessage } from "@/lib/market/api"; 
+import {
+  fetchDisputeMessages,
+  postDisputeMessage,
+  DisputeMessage,
+} from "@/lib/market/api";
 
 type DisputeChatProps = {
   disputeId: number;
@@ -11,119 +14,162 @@ type DisputeChatProps = {
 
 export default function DisputeChat({ disputeId }: DisputeChatProps) {
   const { access } = useAuth();
+
   const [messages, setMessages] = useState<DisputeMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const loadMessages = async () => {
-    if (!access) return;
-    setLoading(true);
-    try {
-      const data = await fetchDisputeMessages(access, disputeId);
-      setMessages(data);
-      scrollToBottom();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  /* ---------------------------------------------
+   * AUTO SCROLL
+   * ------------------------------------------- */
   const scrollToBottom = () => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  /* ---------------------------------------------
+   * LOAD MESSAGES
+   * ------------------------------------------- */
+  const loadMessages = useCallback(async () => {
+    if (!access || !disputeId) return;
+
+    setLoading(true);
+    try {
+      const data = await fetchDisputeMessages(access, disputeId);
+      setMessages(data);
+      setTimeout(scrollToBottom, 50);
+    } catch (err) {
+      console.error("Failed to load dispute messages", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [access, disputeId]);
+
+  /* ---------------------------------------------
+   * SEND MESSAGE
+   * ------------------------------------------- */
   const handleSend = async () => {
-    if (!access || (!newMessage && !file)) return;
+    if (!access || (!newMessage.trim() && !file)) return;
 
     setSending(true);
     try {
       const msg = await postDisputeMessage(access, disputeId, {
-        message: newMessage,
+        message: newMessage.trim(),
         attachment: file,
       });
+
       setMessages((prev) => [...prev, msg]);
       setNewMessage("");
       setFile(null);
-      scrollToBottom();
+
+      setTimeout(scrollToBottom, 50);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to send dispute message", err);
     } finally {
       setSending(false);
     }
   };
 
+  /* ---------------------------------------------
+   * EFFECT
+   * ------------------------------------------- */
   useEffect(() => {
     loadMessages();
-  }, [disputeId]);
+  }, [loadMessages]);
 
+  /* ---------------------------------------------
+   * RENDER
+   * ------------------------------------------- */
   return (
-    <div className="flex flex-col h-full border rounded p-4 bg-white">
-      <div className="flex-1 overflow-y-auto mb-4 space-y-2">
-        {loading ? (
-          <p>Loading messages...</p>
-        ) : messages.length === 0 ? (
-          <p className="text-gray-500 text-center">No messages yet.</p>
-        ) : (
-          messages.map((msg) => (
+ <div className="flex flex-col h-[100dvh] sm:h-[420px] border border-border rounded-none sm:rounded-lg bg-background">
+  {/* 🧾 MESSAGE LIST */}
+  <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
+    {loading ? (
+      <p className="text-sm text-muted-foreground text-center">
+        Loading messages…
+      </p>
+    ) : messages.length === 0 ? (
+      <p className="text-sm text-muted-foreground text-center">
+        No messages yet. Start the dispute conversation.
+      </p>
+    ) : (
+      messages.map((msg) => {
+        const isBuyer = msg.sender_role === "buyer";
+
+        return (
+          <div
+            key={msg.id}
+            className={`flex ${isBuyer ? "justify-end" : "justify-start"}`}
+          >
             <div
-              key={msg.id}
-              className={`flex ${
-                msg.sender_role === "buyer" ? "justify-end" : "justify-start"
+              className={`max-w-[85%] sm:max-w-xs p-3 rounded-lg shadow-sm ${
+                isBuyer
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-foreground"
               }`}
             >
-              <div
-                className={`max-w-xs p-2 rounded ${
-                  msg.sender_role === "buyer"
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-black"
-                }`}
-              >
-                {msg.message && <p>{msg.message}</p>}
-                {msg.attachment && (
-                  <a
-                    href={msg.attachment}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm underline"
-                  >
-                    View attachment
-                  </a>
-                )}
-                <div className="text-xs text-gray-400 text-right">
-                  {new Date(msg.created_at).toLocaleString()}
-                </div>
+              {msg.message && (
+                <p className="text-sm whitespace-pre-wrap break-words">
+                  {msg.message}
+                </p>
+              )}
+
+              {msg.attachment && (
+                <a
+                  href={msg.attachment}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block mt-2 text-xs underline text-primary"
+                >
+                  📎 View attachment
+                </a>
+              )}
+
+              <div className="mt-1 text-[10px] text-muted-foreground text-right">
+                {new Date(msg.created_at).toLocaleString()}
               </div>
             </div>
-          ))
-        )}
-        <div ref={scrollRef} />
-      </div>
+          </div>
+        );
+      })
+    )}
 
-      <div className="flex flex-col gap-2">
-        <textarea
-          className="border rounded p-2 w-full"
-          placeholder="Type your message..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-        />
+    <div ref={scrollRef} />
+  </div>
 
-        <input
-          type="file"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-        />
+  {/* ✍️ INPUT (sticky on mobile) */}
+  <div className="border-t border-border p-3 space-y-2 bg-background sticky bottom-0">
+    <textarea
+      className="border border-input rounded p-2 w-full text-sm resize-none
+                 bg-background text-foreground placeholder:text-muted-foreground"
+      rows={2}
+      placeholder="Type your message…"
+      value={newMessage}
+      onChange={(e) => setNewMessage(e.target.value)}
+      disabled={sending}
+    />
 
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-          onClick={handleSend}
-          disabled={sending || (!newMessage && !file)}
-        >
-          {sending ? "Sending..." : "Send"}
-        </button>
-      </div>
+    <div className="flex items-center gap-2">
+      <input
+        type="file"
+        className="text-xs text-muted-foreground"
+        onChange={(e) => setFile(e.target.files?.[0] || null)}
+      />
+
+      <button
+        className="ml-auto bg-primary text-primary-foreground px-4 py-2 rounded text-sm
+                   disabled:opacity-50 disabled:pointer-events-none"
+        onClick={handleSend}
+        disabled={sending || (!newMessage.trim() && !file)}
+      >
+        {sending ? "Sending…" : "Send"}
+      </button>
     </div>
+  </div>
+</div>
+
   );
 }

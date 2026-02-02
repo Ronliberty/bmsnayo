@@ -144,11 +144,25 @@ export function Sidebar({
   const sidebarItems = [
     { name: "News", href: "/dashboard", icon: Home },
     { name: "Jobs", href: "/dashboard/jobs", icon: Briefcase },
-    { name: "Marketplace", href: "/dashboard/marketplace", icon: Store },
-    { name: "Analytics", href: "/dashboard/finance", icon: BarChart2 },
-    { name: "Partnerships", href: "/dashboard/partnerships", icon: Handshake },
+    { name: "Marketplace", href: "/dashboard/marketplace", icon: Store,
+      restricted: !isPartner,
+      tooltip: "Coming soon",
+     },
+    { name: "Analytics", href: "/dashboard/finance", icon: BarChart2, 
+      restricted: !isPartner,
+      tooltip: "Coming soon",
+    },
+    { name: "Partnerships", href: "/dashboard/partnerships", icon: Handshake,
+      restricted: !isPartner,
+      tooltip: "Coming soon",
+     },
 
-    { name: "Sell", href: "/dashboard/seller", icon: BadgeDollarSign },
+    { name: "Sell", href: "/dashboard/seller",
+       icon: BadgeDollarSign,
+
+      restricted: !isPartner,
+      tooltip: "Coming soon",
+     },
 
     {
       name: "Groups",
@@ -158,8 +172,14 @@ export function Sidebar({
       tooltip: "Coming soon",
     },
 
-    { name: "Learn", href: "/dashboard/tutor", icon: User },
-    { name: "Subscription", href: "/dashboard/subscription", icon: User },
+    { name: "Learn", href: "/dashboard/tutor", icon: User,
+      restricted: !isPartner,
+      tooltip: "Coming soon",
+     },
+    { name: "Subscription", href: "/dashboard/subscription", icon: User,
+      restricted: !isPartner,
+      tooltip: "Coming soon",
+    },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 

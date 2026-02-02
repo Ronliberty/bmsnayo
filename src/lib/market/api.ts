@@ -644,3 +644,102 @@ export async function postDisputeMessage(
 }
 
 
+
+
+/* ---------------------------------------------
+ * DISPUTE CORE TYPES
+ * ------------------------------------------- */
+
+export type DisputeStatus = "open" | "resolved" | "closed";
+
+
+
+export type DisputeUserRole = "buyer" | "seller" | "agent" | "unknown";
+
+/* ---------------------------------------------
+ * DISPUTE OBJECT (FROM BACKEND)
+ * ------------------------------------------- */
+export interface Dispute {
+  id: number;
+
+  order?: number | null;
+  order_item?: number | null;
+  delivery?: number | null;
+
+  category: DisputeCategory;
+  reason?: string | null;
+  evidence_file?: string | null;
+
+  status: DisputeStatus;
+  resolution?: string | null;
+
+  opened_by: string;
+  assigned_agent?: string | null;
+
+  created_at: string;
+
+  /** 🔑 backend-computed role */
+  user_role: DisputeUserRole;
+}
+
+/* ---------------------------------------------
+ * API RESPONSE SHAPE
+ * ------------------------------------------- */
+export interface DisputeByDeliveryResponse {
+  exists: boolean;
+  dispute?: Dispute;
+}
+
+
+
+export async function getBuyerDisputeByDelivery(
+  accessToken: string,
+  deliveryId: number
+): Promise<DisputeByDeliveryResponse> {
+  const res = await fetch(
+    `${API_BASE}/market/disputes/by-delivery/?delivery=${deliveryId}&role=buyer`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || "Failed to fetch buyer dispute");
+  }
+
+  const data = await res.json();
+    console.log("Buyer dispute by delivery response:", data);
+  return data;
+}
+
+
+export async function getSellerDisputeByDelivery(
+  accessToken: string,
+  deliveryId: number
+): Promise<DisputeByDeliveryResponse> {
+  const res = await fetch(
+    `${API_BASE}/market/disputes/by-delivery/?delivery=${deliveryId}&role=seller`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || "Failed to fetch seller dispute");
+  }
+
+  const data = await res.json();
+  return data;
+}
