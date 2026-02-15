@@ -134,6 +134,8 @@ export default function DeliveryViewer({ orderItemId }: DeliveryViewerProps) {
 <CardFooter className="flex flex-col gap-3 border-t pt-4">
   {/* INLINE ACTIONS */}
   <div className="flex items-center gap-4 text-sm">
+    {canAct && (
+  <>
     <button
       className="text-green-600 hover:underline"
       disabled={submitting}
@@ -148,6 +150,8 @@ export default function DeliveryViewer({ orderItemId }: DeliveryViewerProps) {
     >
       Reject
     </button>
+    </>
+    )}
 
     {delivery.dispute && (
       <button

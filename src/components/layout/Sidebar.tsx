@@ -145,11 +145,11 @@ export function Sidebar({
     { name: "News", href: "/dashboard", icon: Home },
     { name: "Jobs", href: "/dashboard/jobs", icon: Briefcase },
     { name: "Marketplace", href: "/dashboard/marketplace", icon: Store,
-      restricted: !isPartner,
+      // restricted: !isPartner,
       tooltip: "Coming soon",
      },
     { name: "Analytics", href: "/dashboard/finance", icon: BarChart2, 
-      restricted: !isPartner,
+      // restricted: !isPartner,
       tooltip: "Coming soon",
     },
     { name: "Partnerships", href: "/dashboard/partnerships", icon: Handshake,
@@ -160,7 +160,7 @@ export function Sidebar({
     { name: "Sell", href: "/dashboard/seller",
        icon: BadgeDollarSign,
 
-      restricted: !isPartner,
+      // restricted: !isPartner,
       tooltip: "Coming soon",
      },
 
@@ -168,7 +168,7 @@ export function Sidebar({
       name: "Groups",
       href: "/dashboard/partnerships",
       icon: Users,
-      restricted: !isPartner,
+      // restricted: !isPartner,
       tooltip: "Coming soon",
     },
 

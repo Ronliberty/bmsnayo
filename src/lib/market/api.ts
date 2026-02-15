@@ -42,14 +42,7 @@ export interface CreateOrderResponse {
 }
 
 
-// export interface OrderItemType {
-//   id: string;
-//   item: MarketplaceItem;
-//   quantity: number;
-//   delivered_quantity: number;
-//   price: number;
-//   status: string;
-// }
+
 
 export interface OrderItemType {
   order_item_id: number;
@@ -62,8 +55,8 @@ export interface OrderItemType {
 
 export interface OrderType {
   id: string;
-  buyer: string;   // StringRelatedField from serializer
-  seller: string;  // StringRelatedField
+  buyer: string;   
+  seller: string; 
   status: string;
   created_at: string;
   updated_at: string;
@@ -72,33 +65,22 @@ export interface OrderType {
 
 
 
-// export interface OrderItemDelivery {
-//   id: number;
-//   order_item: number;
-//   seller: string; // seller username or id
-//   delivered_quantity: number;
-//   file?: string;
-//   repo_url?: string;
-//   message: string;
-//   login_details?: string; // ✅ ADD THIS
-//   submitted_at: string;
-//   status: "pending" | "partial" | "delivered";
-// }
+
 
 export interface OrderItemDelivery {
   id: number;
   order_item: number;
-  seller: string; // seller username or id
+  seller: string;
   delivered_quantity: number;
   file?: string;
   repo_url?: string;
   message: string;
-  login_details?: string; // ✅ ADD THIS
+  login_details?: string; 
   submitted_at: string;
-  status: "pending" | "partial" | "delivered" | "disputed"; // ✅ fixed
+  status: "pending" | "partial" | "delivered" | "disputed";
   dispute?: {
     id: number;
-  }; // optional, for dispute chat
+  }; 
 }
 
 export interface SubmitDeliveryPayload {
@@ -215,58 +197,6 @@ export async function createOrder(
 }
 
 
-// export async function getOrders(
-//   accessToken: string
-// ): Promise<OrderType[]> {
-//   const res = await fetch(`${API_BASE}/market/orders/list/`, {
-//     method: "GET",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: `Bearer ${accessToken}`,
-//     },
-//     credentials: "include",
-//   });
-
-//   if (!res.ok) {
-//     const err = await res.json().catch(() => ({}));
-//     throw new Error(err?.detail || "Failed to fetch orders");
-//   }
-
-//   return res.json();
-// }
-
-// export async function getOrders(
-//   accessToken: string
-// ): Promise<OrderType[]> {
-//   const res = await fetch(`${API_BASE}/market/orders/list/`, {
-//     method: "GET",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: `Bearer ${accessToken}`,
-//     },
-//     credentials: "include",
-//   });
-
-//   if (!res.ok) {
-//     const err = await res.json().catch(() => ({}));
-//     throw new Error(err?.detail || "Failed to fetch orders");
-//   }
-
-//   const data = await res.json();
-
-//   // ✅ Handle DRF pagination safely
-//   if (Array.isArray(data)) {
-//     return data;
-//   }
-
-//   if (Array.isArray(data.results)) {
-//     return data.results;
-//   }
-
-//   throw new Error("Invalid orders response format");
-// }
-
-
 export async function getBuyerOrders(
   accessToken: string
 ): Promise<OrderType[]> {
@@ -363,50 +293,6 @@ export async function cancelOrder(
   return res.json();
 }
 
-
-// export async function getOrderItemDeliveries(
-//   accessToken: string,
-//   orderItemId: number
-// ): Promise<OrderItemDelivery[]> {
-//   try {
-//     const res = await axios.get<OrderItemDelivery[]>(
-//       `${API_BASE}/market/order-items/${orderItemId}/deliveries/`,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${accessToken}`,
-//           "Content-Type": "application/json",
-//         },
-//         withCredentials: true, // equivalent to fetch's credentials: "include"
-//       }
-//     );
-//     return res.data;
-//   } catch (err: any) {
-//     throw new Error(
-//       err.response?.data?.detail || err.message || "Failed to fetch deliveries"
-//     );
-//   }
-// }
-
-// export async function getOrderItemDeliveries(
-//   accessToken: string,
-//   orderItemId: number
-// ): Promise<OrderItemDelivery[]> {
-//   const res = await fetch(`${API_BASE}/market/order-items/${orderItemId}/deliveries/`, {
-//     method: "GET",
-//     headers: {
-//       Authorization: `Bearer ${accessToken}`,
-//       "Content-Type": "application/json",
-//     },
-//     credentials: "include",
-//   });
-
-//   if (!res.ok) {
-//     const err = await res.json().catch(() => ({}));
-//     throw new Error(err?.detail || "Failed to fetch deliveries");
-//   }
-
-//   return res.json();
-// }
 
 
 
