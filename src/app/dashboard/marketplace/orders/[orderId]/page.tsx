@@ -18,6 +18,7 @@ import { useAuth } from "@/context/AuthContext";
 import DeliveryViewer from "@/components/marketplace/DeliveryViewer";
 
 import { getOrderById, OrderType, Media } from "@/lib/market/api";
+import ChatLauncher from "@/components/Chat/ChatLauncher";
 
 export default function OrderPage() {
   const params = useParams();
@@ -138,7 +139,7 @@ export default function OrderPage() {
         </Card>
       )}
 
-      {/* ✅ CORRECT: pass orderItem.id, NOT order.id */}
+     <ChatLauncher />
       {orderItem && (
         <DeliveryViewer orderItemId={orderItem.order_item_id} />
       )}

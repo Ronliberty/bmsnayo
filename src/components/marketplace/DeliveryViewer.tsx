@@ -20,6 +20,7 @@ import {
   getBuyerDeliveries,
   OrderItemDelivery,
 } from "@/lib/market/api";
+import ChatLauncher from "../Chat/ChatLauncher";
 
 interface DeliveryViewerProps {
   orderItemId: number;
@@ -172,10 +173,10 @@ export default function DeliveryViewer({ orderItemId }: DeliveryViewerProps) {
   )}
 
   {/* DISPUTE THREAD (NO STATUS CHECK) */}
-  
+   {/* <ChatLauncher /> */}
     <div className="w-full rounded-md border p-3 bg-background space-y-2">
       
-      <DisputeChat disputeId={delivery.dispute?.id!} />
+      {/* <DisputeChat disputeId={delivery.dispute?.id!} /> */}
     
     </div>
 

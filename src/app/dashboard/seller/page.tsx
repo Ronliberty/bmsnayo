@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "lucide-react";
 import { useSellerStatus } from "@/app/hooks/useSellerStatus";
+import ChatLauncher from "@/components/Chat/ChatLauncher";
 
 
 
@@ -105,7 +106,7 @@ export default function SellerUploadPage() {
   }
 
   return (
-    
+    <>
     <div className="max-w-3xl mx-auto p-6 space-y-6">
        <div className="flex gap-4 mb-6">
         <Button
@@ -228,5 +229,7 @@ export default function SellerUploadPage() {
         </CardContent>
       </Card>
     </div>
+    <ChatLauncher />
+    </>
   );
 }

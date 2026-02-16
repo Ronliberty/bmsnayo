@@ -4,13 +4,16 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import AvailablePartnerships from "@/components/partnership/AvailablePartnerships";
 import MyPartnerships from "@/components/partnership/MyPartnerships";
+import ChatLauncher from "@/components/Chat/ChatLauncher";
+import ChatModal from "@/components/Chat/ChatModal";
 
 export default function PartnershipsPage() {
   const [activeTab, setActiveTab] = useState<"available" | "joined">("available");
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
  
-
+<>
     <div className="p-4 md:p-6 space-y-6">
   {/* Page Title */}
   <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
@@ -44,6 +47,10 @@ export default function PartnershipsPage() {
     {activeTab === "joined" && <MyPartnerships />}
   </div>
 </div>
+
+<ChatLauncher onOpen={() => setIsOpen(true)} />
+<ChatModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+</>
 
   );
 }

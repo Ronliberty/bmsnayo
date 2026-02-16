@@ -857,9 +857,7 @@ async function toggleWishlist(item: MarketplaceItem) {
   setActionLoading((s) => ({ ...s, [id]: true }));
 
   try {
-    await toggleWishlistItem(access, item, saved); // use centralized API
-
-    // Update local state
+    await toggleWishlistItem(access, item, saved); 
     setWishlist((prev) =>
       saved ? prev.filter((x) => x !== id) : [...prev, id]
     );
@@ -917,7 +915,7 @@ async function toggleWishlist(item: MarketplaceItem) {
     </button>
   </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-1 lg:grid-cols-2   gap-4">
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>

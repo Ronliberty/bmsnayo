@@ -610,7 +610,10 @@ async function handleSubmitDelivery() {
         const badge = getStatusBadge(order.status);
 
         return (
-          <Card key={order.id}>
+          <Card key={order.id}
+          onClick={() => router.push(`/dashboard/seller/orders/${order.id}`)}
+          className="cursor-pointer hover:bg-accent/50 transition-colors"
+          >
             <CardHeader>
               <CardTitle className="flex justify-between">
                 <span>Order #{order.id}</span>
