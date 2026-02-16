@@ -134,37 +134,31 @@ export default function DeliveryViewer({ orderItemId }: DeliveryViewerProps) {
 <CardFooter className="flex flex-col gap-3 border-t pt-4">
   {/* INLINE ACTIONS */}
   <div className="flex items-center gap-4 text-sm">
-    {canAct && (
-  <>
-    <button
-      className="text-green-600 hover:underline"
-      disabled={submitting}
-    >
-      Approve
-    </button>
+   
 
-    <button
-      className="text-red-600 hover:underline"
-      disabled={submitting}
-      onClick={() => setShowRejectForm(delivery.id)}
-    >
-      Reject
-    </button>
-    </>
-    )}
+    {(delivery.status !== "disputed" && delivery.status !== "accepted") && (
+      <>
+        <button
+          className="text-green-600 hover:underline"
+          disabled={submitting}
+        >
+          Approve
+        </button>
 
-    {delivery.dispute && (
-      <button
-        className="text-blue-600 hover:underline"
-        onClick={() =>
-          setShowDispute(
-            showDispute === delivery.id ? null : delivery.id
-          )
-        }
-      >
-        {showDispute === delivery.id ? "Hide Dispute" : "Open Dispute"}
-      </button>
+        <button
+          className="text-red-600 hover:underline"
+          disabled={submitting}
+          onClick={() => setShowRejectForm(delivery.id)}
+        >
+          Reject
+        </button>
+      </>
     )}
+    
+
+  
+   
+
   </div>
 
   {/* REJECT FORM INLINE */}
@@ -179,16 +173,13 @@ export default function DeliveryViewer({ orderItemId }: DeliveryViewerProps) {
 
   {/* DISPUTE THREAD (NO STATUS CHECK) */}
   
-
-  <div className="w-full rounded-md border p-3 bg-background space-y-2">
-    <div className="flex items-center gap-2">
-      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-        Disputed
-      </span>
+    <div className="w-full rounded-md border p-3 bg-background space-y-2">
+      
+      <DisputeChat disputeId={delivery.dispute?.id!} />
+    
     </div>
 
-    <DisputeChat disputeId={0}  />
-  </div>
+
 
 
 </CardFooter>

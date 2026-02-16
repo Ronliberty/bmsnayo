@@ -77,7 +77,7 @@ export interface OrderItemDelivery {
   message: string;
   login_details?: string; 
   submitted_at: string;
-  status: "pending" | "partial" | "delivered" | "disputed";
+  status: "pending" | "partial" | "delivered" | "disputed" | "accepted" | "rejected";
   dispute?: {
     id: number;
   }; 
