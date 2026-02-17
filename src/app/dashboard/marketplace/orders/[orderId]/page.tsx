@@ -19,6 +19,7 @@ import DeliveryViewer from "@/components/marketplace/DeliveryViewer";
 
 import { getOrderById, OrderType, Media } from "@/lib/market/api";
 import ChatLauncher from "@/components/Chat/ChatLauncher";
+import ChatModal from "@/components/Chat/ChatModal";
 
 export default function OrderPage() {
   const params = useParams();
@@ -29,6 +30,7 @@ export default function OrderPage() {
   const [order, setOrder] = useState<OrderType | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (!access || !orderId) {
@@ -139,7 +141,8 @@ export default function OrderPage() {
         </Card>
       )}
 
-     <ChatLauncher />
+     <ChatLauncher onOpen={() => setIsOpen(true)} />
+     <ChatModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
       {orderItem && (
         <DeliveryViewer orderItemId={orderItem.order_item_id} />
       )}

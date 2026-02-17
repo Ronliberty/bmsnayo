@@ -1,5 +1,7 @@
 "use client";
 
+import ChatInput from "./ChatInput";
+
 interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -49,13 +51,7 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
         </div>
 
         {/* Placeholder for Chat Input */}
-        <div className="p-4 border-t">
-          <input
-            type="text"
-            placeholder="Type a message..."
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <ChatInput />
       </div>
     </div>
   );

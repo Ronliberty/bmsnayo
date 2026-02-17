@@ -1,10 +1,13 @@
 "use client";
-
+import { useState } from "react";
 import ChatLauncher from "@/components/Chat/ChatLauncher";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import ChatModal from "@/components/Chat/ChatModal";
+
 
 
 export default function OrderSellerPage() {
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <>
         <div className="p-4">
@@ -17,7 +20,8 @@ export default function OrderSellerPage() {
               </div>
         </Card>
         </div>
-        <ChatLauncher />
+        <ChatLauncher onOpen={() => setIsOpen(true)} />
+        <ChatModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>
   );
 }
